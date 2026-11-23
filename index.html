@@ -680,6 +680,12 @@
       border: 1px solid #fde68a;
     }
 
+    .badge-cicil {
+      background: #fff7ed;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+
     .stat-box.stat-warning { border-left-color: var(--warning); }
 
     .chk-guru {
@@ -935,13 +941,21 @@
       <div class="form-row" style="align-items: end; margin-bottom: 0;">
         <div class="form-group">
           <label>Pilih Jenis Pembayaran:</label>
-          <select id="selectPaymentType" onchange="renderChecklist()"></select>
+          <select id="selectPaymentType" onchange="onPaymentTypeChange()"></select>
         </div>
-        <div class="form-group" style="max-width: 240px;">
+        <div class="form-group" id="monthSelectorGroup" style="display:none; max-width: 250px;">
+          <label>Pilih Bulan:</label>
+          <div style="display:flex; gap:6px;">
+            <select id="selectPaymentMonth" onchange="renderChecklist()"></select>
+            <button type="button" class="btn btn-outline btn-sm" onclick="openAddMonthModal()" title="Tambah Bulan Baru">➕</button>
+          </div>
+        </div>
+        <div class="form-group" style="max-width: 230px;">
           <label>Filter Tampilan:</label>
           <select id="filterChecklist" onchange="renderChecklist()">
             <option value="all">Semua Peserta Iuran</option>
-            <option value="unpaid">Belum Bayar Saja</option>
+            <option value="unpaid">Belum Lunas / Cicil</option>
+            <option value="partial">Sedang Mencicil Saja</option>
             <option value="held">Dipegang Saya (Belum ke Guru)</option>
             <option value="handed">Sudah Disetor ke Guru</option>
           </select>
@@ -963,13 +977,14 @@
         <table>
           <thead>
             <tr>
-              <th style="width:45px;">No</th>
+              <th style="width:42px;">No</th>
               <th>Nama Siswa</th>
-              <th style="width:135px;">Tagihan (Rp)</th>
-              <th style="width:160px;">Status Dana</th>
-              <th style="width:142px;">Tgl Bayar</th>
-              <th style="width:100px; text-align:center;">Bayar ke Saya</th>
-              <th style="width:110px; text-align:center;">Disetor ke Guru</th>
+              <th style="width:130px;">Tagihan (Rp)</th>
+              <th style="width:135px;">Terbayar / Cicil</th>
+              <th style="width:165px;">Status Dana</th>
+              <th style="width:138px;">Tgl Bayar</th>
+              <th style="width:95px; text-align:center;">Bayar ke Saya</th>
+              <th style="width:110px; text-align:center;">Langsung / Setor PJ</th>
             </tr>
           </thead>
           <tbody id="checklistBody"></tbody>
@@ -1136,8 +1151,15 @@
       <div class="card-title">➕ Tambah Jenis Pembayaran Baru</div>
       <div class="form-row">
         <div class="form-group">
-          <label>Nama Pembayaran (misal: Uang Pensiun, OSIS)</label>
-          <input type="text" id="newPayName" placeholder="Contoh: Uang Kas Bulan Desember" />
+          <label>Nama Pembayaran (misal: Uang Pensiun, Uang Kas)</label>
+          <input type="text" id="newPayName" placeholder="Contoh: Uang Kas Kelas" />
+        </div>
+        <div class="form-group" style="max-width:190px;">
+          <label>Periode Pembayaran</label>
+          <select id="newPayPeriodType" onchange="toggleNewPayPeriodType()">
+            <option value="once">Sekali Bayar</option>
+            <option value="monthly">Per Bulan (Rutin)</option>
+          </select>
         </div>
         <div class="form-group" style="max-width:210px;">
           <label>Tipe Nominal</label>
@@ -1146,9 +1168,22 @@
             <option value="custom">Beda-beda per Siswa</option>
           </select>
         </div>
-        <div class="form-group" style="max-width:170px;" id="newPayAmountGroup">
+        <div class="form-group" style="max-width:165px;" id="newPayAmountGroup">
           <label id="newPayAmountLabel">Nominal (Rp)</label>
           <input type="text" inputmode="numeric" id="newPayAmount" placeholder="15.000" oninput="handleThousandInput(this)" />
+        </div>
+      </div>
+      <div class="form-row" id="newPayMonthRangeRow" style="display:none; background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label>Bulan Mulai</label>
+          <input type="month" id="newPayStartMonth" />
+        </div>
+        <div class="form-group">
+          <label>Bulan Selesai</label>
+          <input type="month" id="newPayEndMonth" />
+        </div>
+        <div class="form-group" style="display:flex; align-items:end;">
+          <span style="font-size:0.78rem; color:var(--muted);">Bulan baru juga bisa ditambah/disalin kapan saja nanti.</span>
         </div>
       </div>
       <div class="form-row">
@@ -1225,19 +1260,26 @@
 
 <!-- MODAL ATUR NOMINAL BEDA PER SISWA -->
 <div class="modal-bg" id="customAmountModal" onclick="if(event.target===this) closeModal('customAmountModal')">
-  <div class="modal-box" style="max-width:560px;">
+  <div class="modal-box" style="max-width:580px;">
     <div class="card-title">
       <span id="modalCustomAmountTitle">Atur Nominal per Siswa</span>
       <button class="btn btn-sm btn-outline" onclick="closeModal('customAmountModal')">✕</button>
     </div>
+    <div id="customAmountMonthBar" style="display:none; margin-bottom:10px; padding:10px; background:#eff6ff; border-radius:10px; border:1px solid #bfdbfe;">
+      <label style="margin-bottom:4px; color:var(--primary);">Pilih Bulan yang Diatur:</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <select id="customAmountMonthSelect" onchange="renderCustomAmountModalRows()" style="max-width:210px; padding:6px 10px;"></select>
+        <button type="button" class="btn btn-sm btn-outline" onclick="copyCustomAmountsFromPrevMonth()">📋 Salin dari Bulan Sebelumnya</button>
+      </div>
+    </div>
     <p style="font-size:0.83rem; color:var(--muted); margin-bottom:10px;">
       Isi nominal tagihan untuk masing-masing siswa di bawah ini (isi <code>0</code> jika siswa dibebaskan):
     </p>
-    <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
-      <input type="text" inputmode="numeric" id="bulkCustomAmountVal" placeholder="Nominal awal (misal: 10.000)" oninput="handleThousandInput(this)" style="max-width:240px; padding:7px 10px;" />
+    <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center; flex-wrap:wrap;">
+      <input type="text" inputmode="numeric" id="bulkCustomAmountVal" placeholder="Nominal awal (misal: 10.000)" oninput="handleThousandInput(this)" style="max-width:220px; padding:7px 10px;" />
       <button class="btn btn-sm btn-outline" onclick="applyBulkCustomAmount()">Terapkan ke Semua</button>
     </div>
-    <div class="table-wrap" style="max-height:320px; overflow-y:auto;">
+    <div class="table-wrap" style="max-height:300px; overflow-y:auto;">
       <table>
         <thead>
           <tr>
@@ -1249,8 +1291,72 @@
         <tbody id="customAmountModalBody"></tbody>
       </table>
     </div>
-    <div style="text-align:right; margin-top:14px;">
-      <button class="btn btn-primary" onclick="saveCustomAmountsModal()">✅ Simpan Nominal Siswa</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:14px;">
+      <label id="applyAllMonthsCheckWrap" style="display:none; align-items:center; gap:6px; margin:0; font-size:0.82rem; cursor:pointer;">
+        <input type="checkbox" id="applyCustomToAllMonths" style="accent-color:#1d4ed8;" /> Terapkan ke semua bulan
+      </label>
+      <button class="btn btn-primary" style="margin-left:auto;" onclick="saveCustomAmountsModal()">✅ Simpan Nominal Siswa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CICILAN SISWA -->
+<div class="modal-bg" id="installmentModal" onclick="if(event.target===this) closeModal('installmentModal')">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="card-title">
+      <span id="modalInstallmentTitle">💳 Catat Cicilan Siswa</span>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('installmentModal')">✕</button>
+    </div>
+    <div id="installmentSummaryBox" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; font-size:0.86rem;"></div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group">
+        <label>Nominal Bayar / Cicilan Masuk (Rp)</label>
+        <input type="text" inputmode="numeric" id="instAmountInput" placeholder="Contoh: 10.000" oninput="handleThousandInput(this)" />
+      </div>
+      <div class="form-group" style="max-width:165px;">
+        <label>Tanggal Bayar</label>
+        <input type="date" id="instDateInput" />
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Uang Diterima Oleh</label>
+        <select id="instReceiverInput">
+          <option value="bendahara">👛 Bendahara (Dipegang Saya)</option>
+          <option value="pj">🤝 Langsung ke Guru PJ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catatan Cicilan (Opsional)</label>
+        <input type="text" id="instNoteInput" placeholder="Misal: Cicilan ke-1 tunai" />
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:14px;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="fillRemainingInstallment()">Isi Sisa Tunggakan</button>
+      <button type="button" class="btn btn-primary" onclick="addInstallmentEntry()">➕ Simpan Cicilan</button>
+    </div>
+    <div style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Riwayat Pembayaran Siswa Ini:</div>
+    <div id="installmentHistoryList" style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH BULAN BARU -->
+<div class="modal-bg" id="addMonthModal" onclick="if(event.target===this) closeModal('addMonthModal')">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="card-title">
+      <span>📅 Tambah Bulan Baru</span>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('addMonthModal')">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Pilih Bulan & Tahun</label>
+      <input type="month" id="newSingleMonthInput" />
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-bottom:16px; cursor:pointer;">
+      <input type="checkbox" id="copyPrevMonthCustomChk" checked style="accent-color:#1d4ed8;" />
+      <span>Salin nominal khusus per siswa dari bulan terakhir</span>
+    </label>
+    <div style="text-align:right;">
+      <button type="button" class="btn btn-primary" onclick="confirmAddSingleMonth()">✅ Tambahkan Bulan</button>
     </div>
   </div>
 </div>
@@ -1340,8 +1446,35 @@
   const SESSION_KEY = 'kaskelas_pro_logged_in';
   const API_STORAGE_KEY = 'kaskelas_pro_api_url';
 
-  // Anda bisa langsung menempelkan URL /exec di sini atau lewat menu Pengaturan di aplikasi
   const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyOGFbjeOsCmwKWK6D8oy7VjqXa__NAqXnDkjdhX9eIKh7pnbHgqCADU24PxDZB2JIr/exec";
+
+  const MONTH_NAMES_ID = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  function formatMonthLabel(ym) {
+    if (!ym || !ym.includes('-')) return ym || '';
+    const [y, m] = ym.split('-');
+    const idx = parseInt(m, 10) - 1;
+    return `${MONTH_NAMES_ID[idx] || m} ${y}`;
+  }
+
+  function generateMonthRange(startYm, endYm) {
+    if (!startYm || !endYm) return [];
+    const [sy, sm] = startYm.split('-').map(Number);
+    const [ey, em] = endYm.split('-').map(Number);
+    const res = [];
+    let y = sy, m = sm;
+    let guard = 0;
+    while ((y < ey || (y === ey && m <= em)) && guard < 60) {
+      res.push(`${y}-${String(m).padStart(2, '0')}`);
+      m++;
+      if (m > 12) { m = 1; y++; }
+      guard++;
+    }
+    return res;
+  }
 
   function getApiUrl() {
     return (localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL).trim();
@@ -1364,9 +1497,9 @@
       { id: 's5', name: 'Eko Prasetyo', wa: '6281234567894', email: 'eko@contoh.com' }
     ],
     payments: [
-      { id: 'p1', name: 'Uang Pensiun Guru', amount: 15000, teacher: 'Bu Siti (Bendahara)', mandatoryAll: true, participants: [], proofImage: '' },
-      { id: 'p2', name: 'Iuran OSIS', amount: 10000, teacher: 'Pak Rahmat (Pembina OSIS)', mandatoryAll: true, participants: [], proofImage: '' },
-      { id: 'p3', name: 'Sumbangan Sukarela / Kegiatan', amount: 20000, teacher: 'Bu Rina (Wali Kelas)', mandatoryAll: false, participants: ['s1', 's2', 's4'], proofImage: '' }
+      { id: 'p1', name: 'Uang Pensiun Guru', periodType: 'once', amount: 15000, teacher: 'Bu Siti (Bendahara)', mandatoryAll: true, participants: [], proofImage: '' },
+      { id: 'p2', name: 'Iuran OSIS', periodType: 'once', amount: 10000, teacher: 'Pak Rahmat (Pembina OSIS)', mandatoryAll: true, participants: [], proofImage: '' },
+      { id: 'p3', name: 'Sumbangan Sukarela / Kegiatan', periodType: 'once', amount: 20000, teacher: 'Bu Rina (Wali Kelas)', mandatoryAll: false, participants: ['s1', 's2', 's4'], proofImage: '' }
     ],
     records: {
       'p1_s1': { paid: true, date: '2026-11-20' },
@@ -1447,7 +1580,7 @@
     }
   }
 
-  /* TOGGLE IKON MATA KATA SANDI (TERBUKA = TERSEMBUNYI, DICORET = TERLIHAT) */
+  /* TOGGLE IKON MATA KATA SANDI */
   function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -1504,8 +1637,7 @@
       document.getElementById('loginError').style.display = 'none';
       resetAllPasswordFields();
     } else {
-      const err = document.getElementById('loginError');
-      err.style.display = 'block';
+      document.getElementById('loginError').style.display = 'block';
     }
   }
 
@@ -1520,18 +1652,9 @@
     const newPass = document.getElementById('inputSettingPassword').value;
     const confirmPass = document.getElementById('inputSettingPasswordConfirm').value;
 
-    if (!newUser) {
-      alert('Username tidak boleh kosong!');
-      return;
-    }
-    if (!newPass) {
-      alert('Kata sandi baru tidak boleh kosong!');
-      return;
-    }
-    if (newPass !== confirmPass) {
-      alert('Konfirmasi kata sandi tidak cocok!');
-      return;
-    }
+    if (!newUser) { alert('Username tidak boleh kosong!'); return; }
+    if (!newPass) { alert('Kata sandi baru tidak boleh kosong!'); return; }
+    if (newPass !== confirmPass) { alert('Konfirmasi kata sandi tidak cocok!'); return; }
 
     state.auth.username = newUser;
     state.auth.password = newPass;
@@ -1600,12 +1723,79 @@
     return Array.isArray(payment.participants) && payment.participants.includes(studentId);
   }
 
-  function getStudentAmount(payment, studentId) {
+  function getPaymentMonths(payment) {
+    if (!payment || payment.periodType !== 'monthly') return [''];
+    if (!Array.isArray(payment.months) || payment.months.length === 0) {
+      const ym = new Date().toISOString().slice(0, 7);
+      payment.months = [ym];
+    }
+    return payment.months;
+  }
+
+  function getRecordKey(payId, studentId, monthKey) {
+    return monthKey ? `${payId}_${monthKey}_${studentId}` : `${payId}_${studentId}`;
+  }
+
+  function getStudentAmount(payment, studentId, monthKey) {
     if (!payment) return 0;
+    if (monthKey && payment.monthlyCustomAmounts && payment.monthlyCustomAmounts[monthKey]) {
+      const mVal = payment.monthlyCustomAmounts[monthKey][studentId];
+      if (mVal !== undefined && mVal !== '') return Number(mVal) || 0;
+    }
     if (payment.customAmounts && payment.customAmounts[studentId] !== undefined && payment.customAmounts[studentId] !== '') {
       return Number(payment.customAmounts[studentId]) || 0;
     }
     return Number(payment.amount) || 0;
+  }
+
+  function isStudentCustomAmountSet(payment, studentId, monthKey) {
+    if (!payment) return false;
+    if (monthKey && payment.monthlyCustomAmounts && payment.monthlyCustomAmounts[monthKey] && payment.monthlyCustomAmounts[monthKey][studentId] !== undefined) {
+      return true;
+    }
+    return !!(payment.customAmounts && payment.customAmounts[studentId] !== undefined && payment.customAmounts[studentId] !== '');
+  }
+
+  function getRecordPaymentInfo(rec, billAmount) {
+    const bill = Number(billAmount) || 0;
+    if (!rec) {
+      return {
+        paidAmount: 0,
+        remaining: bill,
+        isFullPaid: bill === 0,
+        isPartial: false,
+        handedToTeacher: false,
+        directToPj: false,
+        date: '',
+        installments: []
+      };
+    }
+
+    const installments = Array.isArray(rec.installments) ? rec.installments : [];
+    let paidAmount = 0;
+
+    if (installments.length > 0) {
+      paidAmount = installments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    } else if (rec.paidAmount !== undefined && rec.paidAmount !== null) {
+      paidAmount = Number(rec.paidAmount) || 0;
+    } else if (rec.paid) {
+      paidAmount = bill;
+    }
+
+    const remaining = Math.max(0, bill - paidAmount);
+    const isFullPaid = bill > 0 ? paidAmount >= bill : !!rec.paid;
+    const isPartial = paidAmount > 0 && paidAmount < bill;
+
+    return {
+      paidAmount,
+      remaining,
+      isFullPaid,
+      isPartial,
+      handedToTeacher: !!rec.handedToTeacher,
+      directToPj: !!rec.directToPj,
+      date: rec.date || (installments.length > 0 ? installments[installments.length - 1].date : ''),
+      installments
+    };
   }
 
   function switchTab(tabName) {
@@ -1623,11 +1813,46 @@
     state.payments.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
+      const periodTag = p.periodType === 'monthly' ? 'Per Bulan' : 'Sekali Bayar';
       const amtLabel = p.amountMode === 'custom' ? 'Nominal Beda/Siswa' : formatRp(p.amount);
-      opt.textContent = `${p.name} (${amtLabel}) — ${p.mandatoryAll ? 'Wajib Semua' : 'Pilihan'}`;
+      opt.textContent = `${p.name} [${periodTag}] (${amtLabel})`;
       sel.appendChild(opt);
     });
     if (state.payments.some(p => p.id === prev)) sel.value = prev;
+  }
+
+  function syncMonthSelectorUI(payment) {
+    const group = document.getElementById('monthSelectorGroup');
+    const mSel = document.getElementById('selectPaymentMonth');
+    if (!payment || payment.periodType !== 'monthly') {
+      group.style.display = 'none';
+      mSel.innerHTML = '';
+      return '';
+    }
+
+    group.style.display = 'block';
+    const months = getPaymentMonths(payment);
+    const prevM = mSel.value;
+    mSel.innerHTML = '';
+    months.forEach(ym => {
+      const opt = document.createElement('option');
+      opt.value = ym;
+      opt.textContent = formatMonthLabel(ym);
+      mSel.appendChild(opt);
+    });
+    if (months.includes(prevM)) {
+      mSel.value = prevM;
+    } else {
+      mSel.value = months[months.length - 1];
+    }
+    return mSel.value;
+  }
+
+  function onPaymentTypeChange() {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    syncMonthSelectorUI(payment);
+    renderChecklist();
   }
 
   function renderChecklist() {
@@ -1638,67 +1863,85 @@
     const statsEl = document.getElementById('paymentStats');
 
     if (!payment) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada jenis pembayaran. Tambahkan di menu Pengaturan.</td></tr>';
+      document.getElementById('monthSelectorGroup').style.display = 'none';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Belum ada jenis pembayaran. Tambahkan di menu Pengaturan.</td></tr>';
       return;
     }
 
+    const activeMonth = syncMonthSelectorUI(payment);
     const filter = document.getElementById('filterChecklist').value;
     const participants = state.students.filter(s => isStudentParticipating(payment, s.id));
-    let paidCount = 0;
-    let handedCount = 0;
+
+    let fullPaidCount = 0;
+    let partialCount = 0;
     let heldAmount = 0;
     let handedAmount = 0;
+    let heldStudentCount = 0;
+    let handedStudentCount = 0;
     let target = 0;
 
     participants.forEach(s => {
-      const amt = getStudentAmount(payment, s.id);
+      const amt = getStudentAmount(payment, s.id, activeMonth);
       target += amt;
-      const r = state.records[`${payment.id}_${s.id}`];
-      if (r?.paid) {
-        paidCount++;
-        if (r?.handedToTeacher) {
-          handedCount++;
-          handedAmount += amt;
+      const rec = state.records[getRecordKey(payment.id, s.id, activeMonth)];
+      const info = getRecordPaymentInfo(rec, amt);
+
+      if (info.isFullPaid && amt > 0) fullPaidCount++;
+      if (info.isPartial) partialCount++;
+
+      if (info.paidAmount > 0) {
+        if (info.handedToTeacher) {
+          handedAmount += info.paidAmount;
+          handedStudentCount++;
         } else {
-          heldAmount += amt;
+          heldAmount += info.paidAmount;
+          heldStudentCount++;
         }
       }
     });
 
-    const heldCount = paidCount - handedCount;
-    const unpaidCount = participants.length - paidCount;
+    const unpaidOrPartialCount = participants.length - fullPaidCount;
 
     statsEl.innerHTML = `
-      <div class="stat-box stat-warning"><div class="stat-label">Dipegang Saya (Belum ke Guru)</div><div class="stat-val" style="color:var(--warning);">${formatRp(heldAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${heldCount} Siswa</div></div>
-      <div class="stat-box stat-success"><div class="stat-label">Sudah Disetor ke Guru</div><div class="stat-val" style="color:var(--success);">${formatRp(handedAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${handedCount} / ${participants.length} Siswa</div></div>
-      <div class="stat-box"><div class="stat-label">Target Total</div><div class="stat-val" style="color:var(--primary);">${formatRp(target)}</div></div>
-      <div class="stat-box stat-danger"><div class="stat-label">Belum Bayar</div><div class="stat-val" style="color:var(--danger);">${unpaidCount} Siswa</div></div>
+      <div class="stat-box stat-warning"><div class="stat-label">Dipegang Saya (Belum ke Guru)</div><div class="stat-val" style="color:var(--warning);">${formatRp(heldAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${heldStudentCount} Siswa</div></div>
+      <div class="stat-box stat-success"><div class="stat-label">Sudah Disetor / Langsung ke PJ</div><div class="stat-val" style="color:var(--success);">${formatRp(handedAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${handedStudentCount} / ${participants.length} Siswa</div></div>
+      <div class="stat-box"><div class="stat-label">Target Total ${activeMonth ? '(' + formatMonthLabel(activeMonth) + ')' : ''}</div><div class="stat-val" style="color:var(--primary);">${formatRp(target)}</div></div>
+      <div class="stat-box stat-danger"><div class="stat-label">Belum Lunas / Cicil</div><div class="stat-val" style="color:var(--danger);">${unpaidOrPartialCount} Siswa</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${partialCount > 0 ? partialCount + ' sedang mencicil' : 'Belum bayar penuh'}</div></div>
     `;
 
-    document.getElementById('checklistTitle').textContent = `Daftar Siswa — ${payment.name}`;
+    const titleSuffix = activeMonth ? ` — Bulan ${formatMonthLabel(activeMonth)}` : '';
+    document.getElementById('checklistTitle').textContent = `Daftar Siswa — ${payment.name}${titleSuffix}`;
     document.getElementById('guruPjBadge').textContent = `PJ: ${payment.teacher || '-'}`;
 
     tbody.innerHTML = '';
     let rowNum = 0;
     participants.forEach(s => {
-      const rec = state.records[`${payment.id}_${s.id}`] || { paid: false, date: '', handedToTeacher: false };
-      const isPaid = !!rec.paid;
-      const isHanded = isPaid && !!rec.handedToTeacher;
+      const recKey = getRecordKey(payment.id, s.id, activeMonth);
+      const rec = state.records[recKey] || { paid: false, date: '', handedToTeacher: false };
+      const stuAmt = getStudentAmount(payment, s.id, activeMonth);
+      const info = getRecordPaymentInfo(rec, stuAmt);
 
-      if (filter === 'unpaid' && isPaid) return;
-      if (filter === 'held' && !(isPaid && !isHanded)) return;
-      if (filter === 'handed' && !isHanded) return;
+      if (filter === 'unpaid' && info.isFullPaid) return;
+      if (filter === 'partial' && !info.isPartial) return;
+      if (filter === 'held' && !(info.paidAmount > 0 && !info.handedToTeacher)) return;
+      if (filter === 'handed' && !(info.paidAmount > 0 && info.handedToTeacher)) return;
       rowNum++;
 
       let statusBadge = '<span class="badge badge-belum">• BELUM BAYAR</span>';
-      if (isPaid && !isHanded) {
+      if (info.isPartial) {
+        const lokasi = info.handedToTeacher ? 'di Guru PJ' : 'di Saya';
+        statusBadge = `<span class="badge badge-cicil">⏳ CICIL (Kurang ${formatRp(info.remaining)})</span><span style="display:block; font-size:0.71rem; color:var(--muted); margin-top:2px;">Masuk ${formatRp(info.paidAmount)} (${lokasi})</span>`;
+      } else if (info.isFullPaid && !info.handedToTeacher) {
         statusBadge = '<span class="badge badge-dipegang">👛 DIPEGANG SAYA</span>';
-      } else if (isPaid && isHanded) {
-        statusBadge = '<span class="badge badge-lunas">🤝 DISETOR GURU</span>';
+      } else if (info.isFullPaid && info.handedToTeacher) {
+        statusBadge = info.directToPj
+          ? '<span class="badge badge-lunas">⚡ LANGSUNG KE PJ</span>'
+          : '<span class="badge badge-lunas">🤝 DISETOR GURU</span>';
       }
 
-      const stuAmt = getStudentAmount(payment, s.id);
-      const isCustomAmt = payment.customAmounts && payment.customAmounts[s.id] !== undefined && payment.customAmounts[s.id] !== '';
+      const isCustomAmt = isStudentCustomAmountSet(payment, s.id, activeMonth);
+      const checkedViaBendahara = info.isFullPaid && !info.directToPj;
+      const checkedPj = info.isFullPaid && info.handedToTeacher;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -1710,45 +1953,271 @@
         <td>
           <input type="text" inputmode="numeric" value="${formatThousand(stuAmt)}"
             oninput="handleThousandInput(this)"
-            onchange="updateStudentCustomAmount('${payment.id}', '${s.id}', this.value)"
-            style="padding:6px 8px; font-size:0.85rem; width:115px; font-weight:600; ${isCustomAmt ? 'border-color:var(--accent); background:var(--primary-soft);' : ''}"
-            title="Ubah jika tagihan siswa ini berbeda dari nominal standar" />
+            onchange="updateStudentCustomAmount('${payment.id}', '${s.id}', this.value, '${activeMonth}')"
+            style="padding:6px 8px; font-size:0.85rem; width:112px; font-weight:600; ${isCustomAmt ? 'border-color:var(--accent); background:var(--primary-soft);' : ''}"
+            title="Ubah jika tagihan siswa ini berbeda" />
+        </td>
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+            <span style="font-size:0.82rem; font-weight:700; color:${info.paidAmount > 0 ? 'var(--primary-dark)' : 'var(--muted)'};">${formatRp(info.paidAmount)}</span>
+            <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.74rem;" onclick="openInstallmentModal('${payment.id}', '${s.id}', '${activeMonth}')">
+              💳 ${info.installments.length > 0 ? `Cicil (${info.installments.length}x)` : 'Cicil'}
+            </button>
+          </div>
         </td>
         <td>${statusBadge}</td>
         <td>
-          <input type="date" value="${rec.date || ''}"
-            onchange="updatePaymentDate('${payment.id}', '${s.id}', this.value)"
-            style="padding:5px 7px; font-size:0.8rem; width:132px; color:${isPaid ? 'var(--text)' : 'var(--muted)'};"
-            title="Pilih atau ubah tanggal pembayaran (bisa tanggal yang sudah berlalu)" />
+          <input type="date" value="${info.date || ''}"
+            onchange="updatePaymentDate('${payment.id}', '${s.id}', this.value, '${activeMonth}')"
+            style="padding:5px 7px; font-size:0.8rem; width:130px; color:${info.paidAmount > 0 ? 'var(--text)' : 'var(--muted)'};"
+            title="Tanggal pembayaran" />
         </td>
         <td style="text-align:center;">
-          <input type="checkbox" class="chk-big" ${isPaid ? 'checked' : ''} onchange="togglePayment('${payment.id}', '${s.id}', this.checked)" title="Centang jika siswa sudah bayar ke Anda" />
+          <input type="checkbox" class="chk-big" ${checkedViaBendahara ? 'checked' : ''}
+            onchange="togglePaymentViaBendahara('${payment.id}', '${s.id}', this.checked, '${activeMonth}')"
+            title="Centang jika siswa bayar lunas ke Anda (Bendahara)" />
         </td>
         <td style="text-align:center;">
-          <input type="checkbox" class="chk-guru" ${isHanded ? 'checked' : ''} ${!isPaid ? 'disabled' : ''} onchange="toggleHandedToTeacher('${payment.id}', '${s.id}', this.checked)" title="${isPaid ? 'Centang jika uang sudah diserahkan ke Guru PJ' : 'Siswa belum membayar ke Anda'}" />
+          <input type="checkbox" class="chk-guru" ${checkedPj ? 'checked' : ''}
+            onchange="toggleDirectOrHandedToPj('${payment.id}', '${s.id}', this.checked, '${activeMonth}')"
+            title="Centang jika siswa bayar LANGSUNG ke Guru PJ, atau uang sudah disetor ke Guru PJ" />
         </td>
       `;
       tbody.appendChild(tr);
     });
 
     if (rowNum === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted);">Tidak ada data siswa pada filter ini.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Tidak ada data siswa pada filter ini.</td></tr>';
     }
 
-    renderBatchLogs(payment);
+    renderBatchLogs(payment, activeMonth);
   }
 
+  /* MODAL CICILAN SISWA */
+  let activeInstContext = null;
+
+  function openInstallmentModal(payId, studentId, monthKey) {
+    activeInstContext = { payId, studentId, monthKey: monthKey || '' };
+    const payment = state.payments.find(p => p.id === payId);
+    const student = state.students.find(s => s.id === studentId);
+    if (!payment || !student) return;
+
+    const monthLabel = monthKey ? ` (${formatMonthLabel(monthKey)})` : '';
+    document.getElementById('modalInstallmentTitle').textContent = `💳 Cicilan — ${student.name}`;
+    document.getElementById('instAmountInput').value = '';
+    document.getElementById('instDateInput').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('instNoteInput').value = '';
+    document.getElementById('instReceiverInput').value = 'bendahara';
+
+    renderInstallmentModalContent();
+    document.getElementById('installmentModal').classList.add('open');
+  }
+
+  function renderInstallmentModalContent() {
+    if (!activeInstContext) return;
+    const { payId, studentId, monthKey } = activeInstContext;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const rec = state.records[recKey];
+    const info = getRecordPaymentInfo(rec, bill);
+    const monthLabel = monthKey ? ` • Bulan ${formatMonthLabel(monthKey)}` : '';
+
+    document.getElementById('installmentSummaryBox').innerHTML = `
+      <div style="font-weight:700; color:var(--primary-dark); margin-bottom:6px;">${payment.name}${monthLabel}</div>
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <span>Total Tagihan: <strong>${formatRp(bill)}</strong></span>
+        <span>Sudah Masuk: <strong style="color:var(--success);">${formatRp(info.paidAmount)}</strong></span>
+        <span>Sisa Tunggakan: <strong style="color:${info.remaining > 0 ? 'var(--danger)' : 'var(--success)'};">${formatRp(info.remaining)}</strong></span>
+      </div>
+    `;
+
+    const listEl = document.getElementById('installmentHistoryList');
+    if (info.installments.length === 0) {
+      if (info.paidAmount > 0) {
+        listEl.innerHTML = `<div style="font-size:0.82rem; color:var(--text-secondary); padding:8px; background:#f8fafc; border-radius:8px; border:1px solid var(--border);">
+          Tercatat pembayaran langsung sebesar <strong>${formatRp(info.paidAmount)}</strong> (${info.date || 'tanpa tanggal'}).
+        </div>`;
+      } else {
+        listEl.innerHTML = `<div style="font-size:0.82rem; color:var(--muted);">Belum ada riwayat cicilan masuk.</div>`;
+      }
+      return;
+    }
+
+    listEl.innerHTML = '';
+    info.installments.forEach((inst, idx) => {
+      const tujuan = inst.receiver === 'pj' ? '⚡ Langsung ke Guru PJ' : '👛 Dipegang Bendahara';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; font-size:0.82rem;';
+      row.innerHTML = `
+        <div>
+          <strong>#${idx + 1} — ${formatRp(inst.amount)}</strong> <span style="color:var(--muted);">(${inst.date || '-'})</span>
+          <div style="font-size:0.75rem; color:var(--text-secondary);">${tujuan}${inst.note ? ' • ' + inst.note : ''}</div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="deleteInstallmentEntry('${inst.id}')">🗑️</button>
+      `;
+      listEl.appendChild(row);
+    });
+  }
+
+  function fillRemainingInstallment() {
+    if (!activeInstContext) return;
+    const { payId, studentId, monthKey } = activeInstContext;
+    const payment = state.payments.find(p => p.id === payId);
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const info = getRecordPaymentInfo(state.records[getRecordKey(payId, studentId, monthKey)], bill);
+    document.getElementById('instAmountInput').value = formatThousand(info.remaining);
+  }
+
+  function addInstallmentEntry() {
+    if (!activeInstContext) return;
+    const { payId, studentId, monthKey } = activeInstContext;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+
+    const amt = parseThousand(document.getElementById('instAmountInput').value);
+    const date = document.getElementById('instDateInput').value || new Date().toISOString().slice(0, 10);
+    const note = document.getElementById('instNoteInput').value.trim();
+    const receiver = document.getElementById('instReceiverInput').value;
+
+    if (amt <= 0) {
+      alert('Masukkan nominal cicilan lebih dari 0!');
+      return;
+    }
+
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const prev = state.records[recKey] || {};
+    const prevInfo = getRecordPaymentInfo(prev, bill);
+
+    let installments = Array.isArray(prev.installments) ? [...prev.installments] : [];
+    if (installments.length === 0 && prevInfo.paidAmount > 0) {
+      installments.push({
+        id: 'inst_init_' + Date.now(),
+        amount: prevInfo.paidAmount,
+        date: prev.date || date,
+        receiver: prev.handedToTeacher ? 'pj' : 'bendahara',
+        note: 'Pembayaran sebelumnya'
+      });
+    }
+
+    installments.push({
+      id: 'inst_' + Date.now(),
+      amount: amt,
+      date,
+      receiver,
+      note
+    });
+
+    const totalPaid = installments.reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+    const allToPj = installments.every(x => x.receiver === 'pj');
+
+    state.records[recKey] = {
+      paid: bill > 0 ? totalPaid >= bill : true,
+      paidAmount: totalPaid,
+      date,
+      handedToTeacher: allToPj,
+      directToPj: allToPj,
+      installments
+    };
+
+    document.getElementById('instAmountInput').value = '';
+    document.getElementById('instNoteInput').value = '';
+    saveState();
+    renderInstallmentModalContent();
+    renderChecklist();
+  }
+
+  function deleteInstallmentEntry(instId) {
+    if (!activeInstContext) return;
+    const { payId, studentId, monthKey } = activeInstContext;
+    const payment = state.payments.find(p => p.id === payId);
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const rec = state.records[recKey];
+    if (!rec || !Array.isArray(rec.installments)) return;
+
+    rec.installments = rec.installments.filter(x => x.id !== instId);
+    const totalPaid = rec.installments.reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+    if (totalPaid <= 0) {
+      delete state.records[recKey];
+    } else {
+      const allToPj = rec.installments.every(x => x.receiver === 'pj');
+      rec.paidAmount = totalPaid;
+      rec.paid = bill > 0 ? totalPaid >= bill : false;
+      rec.date = rec.installments[rec.installments.length - 1].date || '';
+      rec.handedToTeacher = allToPj;
+      rec.directToPj = allToPj;
+    }
+
+    saveState();
+    renderInstallmentModalContent();
+    renderChecklist();
+  }
+
+  /* MODAL TAMBAH BULAN BARU */
+  function openAddMonthModal() {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment || payment.periodType !== 'monthly') return;
+
+    const months = getPaymentMonths(payment);
+    const lastYm = months[months.length - 1] || new Date().toISOString().slice(0, 7);
+    const [y, m] = lastYm.split('-').map(Number);
+    const nextY = m === 12 ? y + 1 : y;
+    const nextM = m === 12 ? 1 : m + 1;
+    document.getElementById('newSingleMonthInput').value = `${nextY}-${String(nextM).padStart(2, '0')}`;
+    document.getElementById('copyPrevMonthCustomChk').checked = true;
+    document.getElementById('addMonthModal').classList.add('open');
+  }
+
+  function confirmAddSingleMonth() {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+
+    const newYm = document.getElementById('newSingleMonthInput').value;
+    if (!newYm) { alert('Pilih bulan terlebih dahulu!'); return; }
+
+    const months = getPaymentMonths(payment);
+    if (months.includes(newYm)) {
+      alert(`Bulan ${formatMonthLabel(newYm)} sudah ada!`);
+      document.getElementById('selectPaymentMonth').value = newYm;
+      closeModal('addMonthModal');
+      renderChecklist();
+      return;
+    }
+
+    const prevLastYm = months[months.length - 1];
+    months.push(newYm);
+    months.sort();
+    payment.months = months;
+
+    if (document.getElementById('copyPrevMonthCustomChk').checked && prevLastYm && payment.monthlyCustomAmounts && payment.monthlyCustomAmounts[prevLastYm]) {
+      payment.monthlyCustomAmounts[newYm] = { ...payment.monthlyCustomAmounts[prevLastYm] };
+    }
+
+    saveState();
+    closeModal('addMonthModal');
+    syncMonthSelectorUI(payment);
+    document.getElementById('selectPaymentMonth').value = newYm;
+    renderChecklist();
+  }
+
+  /* RIWAYAT SETORAN BERTAHAP KE GURU PJ */
   let tempBatchImage = '';
 
-  function renderBatchLogs(payment) {
+  function renderBatchLogs(payment, activeMonth) {
     const container = document.getElementById('batchLogsContainer');
     if (!Array.isArray(payment.batches)) payment.batches = [];
 
-    // Migrasi otomatis jika ada proofImage lama
     if (payment.proofImage && payment.batches.length === 0) {
       payment.batches.push({
         id: 'b_legacy_' + Date.now(),
         date: new Date().toISOString().slice(0, 10),
+        monthKey: activeMonth || '',
         studentIds: [],
         amount: 0,
         note: 'Bukti Penyerahan Sebelumnya',
@@ -1758,13 +2227,17 @@
       saveState();
     }
 
-    if (payment.batches.length === 0) {
-      container.innerHTML = `<div class="proof-box" style="padding:16px;"><p style="font-size:0.82rem; color:var(--muted);">Belum ada catatan riwayat setoran ke Guru PJ untuk iuran ini.</p></div>`;
+    const visibleBatches = activeMonth
+      ? payment.batches.filter(b => !b.monthKey || b.monthKey === activeMonth)
+      : payment.batches;
+
+    if (visibleBatches.length === 0) {
+      container.innerHTML = `<div class="proof-box" style="padding:16px;"><p style="font-size:0.82rem; color:var(--muted);">Belum ada catatan riwayat setoran ke Guru PJ untuk periode ini.</p></div>`;
       return;
     }
 
     container.innerHTML = '';
-    payment.batches.forEach((b, index) => {
+    visibleBatches.forEach((b, index) => {
       const names = (b.studentIds || [])
         .map(sid => state.students.find(s => s.id === sid)?.name)
         .filter(Boolean);
@@ -1817,24 +2290,27 @@
     const payId = document.getElementById('selectPaymentType').value;
     const payment = state.payments.find(p => p.id === payId);
     if (!payment) return;
+    const activeMonth = payment.periodType === 'monthly' ? document.getElementById('selectPaymentMonth').value : '';
 
     const heldStudents = state.students.filter(s => {
       if (!isStudentParticipating(payment, s.id)) return false;
-      const r = state.records[`${payment.id}_${s.id}`];
-      return r && r.paid && !r.handedToTeacher;
+      const amt = getStudentAmount(payment, s.id, activeMonth);
+      const info = getRecordPaymentInfo(state.records[getRecordKey(payment.id, s.id, activeMonth)], amt);
+      return info.paidAmount > 0 && !info.handedToTeacher;
     });
 
     const listEl = document.getElementById('batchStudentList');
     listEl.innerHTML = '';
     if (heldStudents.length === 0) {
-      listEl.innerHTML = '<div style="grid-column:1/-1; font-size:0.83rem; color:var(--muted); padding:8px;">Tidak ada siswa berstatus "Dipegang Saya" saat ini. Centang dulu siswa yang sudah bayar ke Anda.</div>';
+      listEl.innerHTML = '<div style="grid-column:1/-1; font-size:0.83rem; color:var(--muted); padding:8px;">Tidak ada dana siswa berstatus "Dipegang Saya" saat ini.</div>';
     } else {
       heldStudents.forEach(s => {
-        const amt = getStudentAmount(payment, s.id);
+        const amt = getStudentAmount(payment, s.id, activeMonth);
+        const info = getRecordPaymentInfo(state.records[getRecordKey(payment.id, s.id, activeMonth)], amt);
         listEl.innerHTML += `
           <label class="student-chip">
             <input type="checkbox" class="batch-stu-chk" value="${s.id}" checked onchange="updateBatchModalSummary()" style="accent-color:#059669;" />
-            <span>${s.name} <small style="color:var(--muted);">(${formatRp(amt)})</small></span>
+            <span>${s.name} <small style="color:var(--muted);">(${formatRp(info.paidAmount)})</small></span>
           </label>
         `;
       });
@@ -1857,8 +2333,13 @@
   function updateBatchModalSummary() {
     const payId = document.getElementById('selectPaymentType').value;
     const payment = state.payments.find(p => p.id === payId);
+    const activeMonth = payment?.periodType === 'monthly' ? document.getElementById('selectPaymentMonth').value : '';
     const checkedIds = Array.from(document.querySelectorAll('.batch-stu-chk:checked')).map(c => c.value);
-    const total = checkedIds.reduce((sum, sid) => sum + getStudentAmount(payment, sid), 0);
+    const total = checkedIds.reduce((sum, sid) => {
+      const amt = getStudentAmount(payment, sid, activeMonth);
+      const info = getRecordPaymentInfo(state.records[getRecordKey(payment.id, sid, activeMonth)], amt);
+      return sum + info.paidAmount;
+    }, 0);
     document.getElementById('batchSummaryInfo').textContent = `Terpilih: ${checkedIds.length} siswa — Total Setoran: ${formatRp(total)}`;
   }
 
@@ -1875,6 +2356,7 @@
     const payId = document.getElementById('selectPaymentType').value;
     const payment = state.payments.find(p => p.id === payId);
     if (!payment) return;
+    const activeMonth = payment.periodType === 'monthly' ? document.getElementById('selectPaymentMonth').value : '';
 
     const selectedIds = Array.from(document.querySelectorAll('.batch-stu-chk:checked')).map(c => c.value);
     if (selectedIds.length === 0) {
@@ -1886,19 +2368,24 @@
     const today = document.getElementById('batchDateInput').value || new Date().toISOString().slice(0, 10);
     const note = document.getElementById('batchNoteInput').value.trim();
 
+    let batchTotal = 0;
     selectedIds.forEach(sid => {
-      if (state.records[`${payId}_${sid}`]) {
-        state.records[`${payId}_${sid}`].handedToTeacher = true;
+      const recKey = getRecordKey(payId, sid, activeMonth);
+      const amt = getStudentAmount(payment, sid, activeMonth);
+      const info = getRecordPaymentInfo(state.records[recKey], amt);
+      batchTotal += info.paidAmount;
+      if (state.records[recKey]) {
+        state.records[recKey].handedToTeacher = true;
       }
     });
 
-    const batchTotal = selectedIds.reduce((sum, sid) => sum + getStudentAmount(payment, sid), 0);
     payment.batches.push({
       id: 'b_' + Date.now(),
       date: today,
+      monthKey: activeMonth,
       studentIds: selectedIds,
       amount: batchTotal,
-      note: note || `Setoran ${selectedIds.length} siswa`,
+      note: note || `Setoran ${selectedIds.length} siswa${activeMonth ? ' (' + formatMonthLabel(activeMonth) + ')' : ''}`,
       proofImage: tempBatchImage
     });
 
@@ -1930,57 +2417,125 @@
     renderChecklist();
   }
 
-  function updateStudentCustomAmount(payId, studentId, newVal) {
+  function updateStudentCustomAmount(payId, studentId, newVal, monthKey) {
     const payment = state.payments.find(p => p.id === payId);
     if (!payment) return;
-    if (!payment.customAmounts) payment.customAmounts = {};
 
     const cleaned = String(newVal ?? '').trim();
-    const numVal = parseThousand(cleaned);
-    if (cleaned === '' || numVal === Number(payment.amount)) {
-      delete payment.customAmounts[studentId];
+    const numVal = Math.max(0, parseThousand(cleaned));
+
+    if (payment.periodType === 'monthly' && monthKey) {
+      if (!payment.monthlyCustomAmounts) payment.monthlyCustomAmounts = {};
+      if (!payment.monthlyCustomAmounts[monthKey]) payment.monthlyCustomAmounts[monthKey] = {};
+      if (cleaned === '' || numVal === Number(payment.amount)) {
+        delete payment.monthlyCustomAmounts[monthKey][studentId];
+      } else {
+        payment.monthlyCustomAmounts[monthKey][studentId] = numVal;
+      }
     } else {
-      payment.customAmounts[studentId] = Math.max(0, numVal);
+      if (!payment.customAmounts) payment.customAmounts = {};
+      if (cleaned === '' || numVal === Number(payment.amount)) {
+        delete payment.customAmounts[studentId];
+      } else {
+        payment.customAmounts[studentId] = numVal;
+      }
     }
+
+    // Sesuaikan status lunas jika record sudah ada
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const rec = state.records[recKey];
+    if (rec) {
+      const info = getRecordPaymentInfo(rec, numVal);
+      rec.paid = numVal > 0 ? info.paidAmount >= numVal : true;
+    }
+
     saveState();
     renderChecklist();
   }
 
-  function updatePaymentDate(payId, studentId, newDate) {
-    const prev = state.records[`${payId}_${studentId}`] || {};
+  function updatePaymentDate(payId, studentId, newDate, monthKey) {
+    const payment = state.payments.find(p => p.id === payId);
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const prev = state.records[recKey] || {};
+    const info = getRecordPaymentInfo(prev, bill);
+
     if (newDate) {
-      state.records[`${payId}_${studentId}`] = {
-        paid: true,
+      state.records[recKey] = {
+        ...prev,
+        paid: info.paidAmount > 0 ? info.isFullPaid : true,
+        paidAmount: info.paidAmount > 0 ? info.paidAmount : bill,
         date: newDate,
         handedToTeacher: prev.handedToTeacher || false
       };
     } else {
-      state.records[`${payId}_${studentId}`] = {
-        paid: prev.paid || false,
-        date: '',
-        handedToTeacher: prev.paid ? (prev.handedToTeacher || false) : false
+      state.records[recKey] = {
+        ...prev,
+        date: ''
       };
     }
     saveState();
     renderChecklist();
   }
 
-  function togglePayment(payId, studentId, isPaid) {
+  // Centang kolom "Bayar ke Saya" (Bendahara)
+  function togglePaymentViaBendahara(payId, studentId, isChecked, monthKey) {
+    const payment = state.payments.find(p => p.id === payId);
+    const bill = getStudentAmount(payment, studentId, monthKey);
     const today = new Date().toISOString().slice(0, 10);
-    const prev = state.records[`${payId}_${studentId}`] || {};
-    state.records[`${payId}_${studentId}`] = {
-      paid: isPaid,
-      date: isPaid ? (prev.date || today) : '',
-      handedToTeacher: isPaid ? (prev.handedToTeacher || false) : false
-    };
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const prev = state.records[recKey] || {};
+
+    if (isChecked) {
+      state.records[recKey] = {
+        paid: true,
+        paidAmount: bill,
+        date: prev.date || today,
+        handedToTeacher: false,
+        directToPj: false,
+        installments: []
+      };
+    } else {
+      delete state.records[recKey];
+    }
     saveState();
     renderChecklist();
   }
 
-  function toggleHandedToTeacher(payId, studentId, isHanded) {
-    const prev = state.records[`${payId}_${studentId}`];
-    if (!prev || !prev.paid) return;
-    prev.handedToTeacher = isHanded;
+  // Centang kolom "Langsung / Setor PJ" (Bisa dicentang langsung meski siswa tidak lewat Bendahara!)
+  function toggleDirectOrHandedToPj(payId, studentId, isChecked, monthKey) {
+    const payment = state.payments.find(p => p.id === payId);
+    const bill = getStudentAmount(payment, studentId, monthKey);
+    const today = new Date().toISOString().slice(0, 10);
+    const recKey = getRecordKey(payId, studentId, monthKey);
+    const prev = state.records[recKey];
+    const info = getRecordPaymentInfo(prev, bill);
+
+    if (isChecked) {
+      if (prev && info.paidAmount > 0) {
+        // Uang yang sudah masuk (lunas maupun cicilan) disetor ke Guru PJ
+        prev.handedToTeacher = true;
+      } else {
+        // Siswa membayar LANGSUNG ke Guru PJ tanpa lewat Bendahara
+        state.records[recKey] = {
+          paid: true,
+          paidAmount: bill,
+          date: today,
+          handedToTeacher: true,
+          directToPj: true,
+          installments: []
+        };
+      }
+    } else {
+      if (prev && prev.directToPj) {
+        // Batalkan pembayaran langsung ke PJ -> kembali belum bayar
+        delete state.records[recKey];
+      } else if (prev) {
+        // Kembalikan dari disetor ke Guru PJ menjadi Dipegang Bendahara
+        prev.handedToTeacher = false;
+      }
+    }
+
     saveState();
     renderChecklist();
   }
@@ -1989,15 +2544,26 @@
     const payId = document.getElementById('selectPaymentType').value;
     const payment = state.payments.find(p => p.id === payId);
     if (!payment) return;
+    const activeMonth = payment.periodType === 'monthly' ? document.getElementById('selectPaymentMonth').value : '';
     const today = new Date().toISOString().slice(0, 10);
+
     state.students.forEach(s => {
       if (isStudentParticipating(payment, s.id)) {
-        const prev = state.records[`${payId}_${s.id}`] || {};
-        state.records[`${payId}_${s.id}`] = {
-          paid: status,
-          date: status ? (prev.date || today) : '',
-          handedToTeacher: status ? (prev.handedToTeacher || false) : false
-        };
+        const bill = getStudentAmount(payment, s.id, activeMonth);
+        const recKey = getRecordKey(payId, s.id, activeMonth);
+        const prev = state.records[recKey] || {};
+        if (status) {
+          state.records[recKey] = {
+            paid: true,
+            paidAmount: bill,
+            date: prev.date || today,
+            handedToTeacher: prev.handedToTeacher || false,
+            directToPj: prev.directToPj || false,
+            installments: Array.isArray(prev.installments) ? prev.installments : []
+          };
+        } else {
+          delete state.records[recKey];
+        }
       }
     });
     saveState();
@@ -2008,18 +2574,23 @@
     const payId = document.getElementById('selectPaymentType').value;
     const payment = state.payments.find(p => p.id === payId);
     if (!payment) return;
+    const activeMonth = payment.periodType === 'monthly' ? document.getElementById('selectPaymentMonth').value : '';
     let count = 0;
+
     state.students.forEach(s => {
       if (isStudentParticipating(payment, s.id)) {
-        const rec = state.records[`${payId}_${s.id}`];
-        if (rec && rec.paid && !rec.handedToTeacher) {
+        const bill = getStudentAmount(payment, s.id, activeMonth);
+        const recKey = getRecordKey(payId, s.id, activeMonth);
+        const rec = state.records[recKey];
+        const info = getRecordPaymentInfo(rec, bill);
+        if (rec && info.paidAmount > 0 && !rec.handedToTeacher) {
           rec.handedToTeacher = true;
           count++;
         }
       }
     });
     if (count === 0) {
-      alert('Tidak ada dana yang sedang dipegang Anda untuk disetor pada iuran ini.');
+      alert('Tidak ada dana yang sedang dipegang Anda untuk disetor pada periode ini.');
       return;
     }
     saveState();
@@ -2027,28 +2598,40 @@
     alert(`Berhasil menandai ${count} siswa sudah disetor ke Guru PJ!`);
   }
 
-
-
   function openLightbox(src) {
     document.getElementById('lightboxImg').src = src;
     document.getElementById('lightboxModal').classList.add('open');
   }
 
-  // TAB 2: REKAP & TAGIHAN
+  // TAB 2: REKAP & TAGIHAN (MENGHITUNG TUNGGAKAN BULANAN & SISA CICILAN)
   function getUnpaidSummary() {
     return state.students.map(s => {
       const unpaidItems = [];
       let total = 0;
+
       state.payments.forEach(p => {
-        if (isStudentParticipating(p, s.id)) {
-          const paid = state.records[`${p.id}_${s.id}`]?.paid;
-          if (!paid) {
-            const amt = getStudentAmount(p, s.id);
-            unpaidItems.push(`${p.name} (${formatRp(amt)})`);
-            total += amt;
+        if (!isStudentParticipating(p, s.id)) return;
+        const months = getPaymentMonths(p);
+
+        months.forEach(mKey => {
+          const bill = getStudentAmount(p, s.id, mKey);
+          if (bill <= 0) return;
+
+          const rec = state.records[getRecordKey(p.id, s.id, mKey)];
+          const info = getRecordPaymentInfo(rec, bill);
+
+          if (info.remaining > 0) {
+            const labelBase = mKey ? `${p.name} - ${formatMonthLabel(mKey)}` : p.name;
+            if (info.isPartial) {
+              unpaidItems.push(`${labelBase} (Kurang ${formatRp(info.remaining)})`);
+            } else {
+              unpaidItems.push(`${labelBase} (${formatRp(info.remaining)})`);
+            }
+            total += info.remaining;
           }
-        }
+        });
       });
+
       return { student: s, unpaidItems, total };
     });
   }
@@ -2120,7 +2703,7 @@
       alert(`Nomor WA untuk ${item.student.name} belum diisi di menu Pengaturan.`);
       return;
     }
-    const msg = `Halo ${item.student.name}, mengingatkan rincian iuran ${state.className} yang belum dibayar:\n• ${item.unpaidItems.join('\n• ')}\n\n*Total: ${formatRp(item.total)}*\nTerima kasih 🙏`;
+    const msg = `Halo ${item.student.name}, mengingatkan rincian iuran ${state.className} yang belum lunas:\n• ${item.unpaidItems.join('\n• ')}\n\n*Total Tunggakan: ${formatRp(item.total)}*\nTerima kasih 🙏`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -2132,7 +2715,7 @@
       return;
     }
     const subject = `Pengingat Iuran ${state.className} — ${item.student.name}`;
-    const body = `Halo ${item.student.name},\n\nBerikut rincian iuran ${state.className} (Wali Kelas: ${state.homeroomTeacher}) yang belum tercatat lunas:\n- ${item.unpaidItems.join('\n- ')}\n\nTotal Tagihan: ${formatRp(item.total)}\n\nTerima kasih.`;
+    const body = `Halo ${item.student.name},\n\nBerikut rincian iuran ${state.className} (Wali Kelas: ${state.homeroomTeacher}) yang belum tercatat lunas:\n- ${item.unpaidItems.join('\n- ')}\n\nTotal Tunggakan: ${formatRp(item.total)}\n\nTerima kasih.`;
     window.location.href = `mailto:${item.student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
@@ -2148,13 +2731,31 @@
     document.getElementById('inputSettingPassword').value = state.auth.password || '';
     document.getElementById('inputSettingPasswordConfirm').value = state.auth.password || '';
 
+    // Default bulan di form tambah iuran
+    const curYm = new Date().toISOString().slice(0, 7);
+    if (!document.getElementById('newPayStartMonth').value) {
+      document.getElementById('newPayStartMonth').value = curYm;
+    }
+    if (!document.getElementById('newPayEndMonth').value) {
+      document.getElementById('newPayEndMonth').value = curYm;
+    }
+
     const payBody = document.getElementById('paymentSettingsBody');
     payBody.innerHTML = '';
     state.payments.forEach(p => {
       const isCustomMode = p.amountMode === 'custom';
+      const isMonthly = p.periodType === 'monthly';
+      const monthsList = isMonthly ? getPaymentMonths(p) : [];
+      const periodBadge = isMonthly
+        ? `<span class="badge badge-non" style="margin-top:4px;">📅 Per Bulan (${monthsList.length} bln)</span>`
+        : `<span style="display:block; font-size:0.74rem; color:var(--muted); margin-top:2px;">Sekali Bayar</span>`;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${p.name}</strong></td>
+        <td>
+          <strong>${p.name}</strong>
+          ${periodBadge}
+        </td>
         <td>
           <div style="display:flex; flex-direction:column; gap:5px;">
             <select onchange="changeAmountMode('${p.id}', this.value)" style="padding:5px 8px; font-size:0.8rem; width:auto;">
@@ -2178,8 +2779,8 @@
           </div>
         </td>
         <td>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-outline btn-sm" onclick="duplicatePaymentType('${p.id}')" title="Salin untuk bulan berikutnya">📋 Salin</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="duplicatePaymentType('${p.id}')" title="Salin iuran">📋 Salin</button>
             <button class="btn btn-danger btn-sm" onclick="deletePayment('${p.id}')">🗑️</button>
           </div>
         </td>
@@ -2211,6 +2812,11 @@
     alert('Identitas judul, kelas, dan nama wali kelas berhasil disimpan!');
   }
 
+  function toggleNewPayPeriodType() {
+    const pType = document.getElementById('newPayPeriodType').value;
+    document.getElementById('newPayMonthRangeRow').style.display = pType === 'monthly' ? 'flex' : 'none';
+  }
+
   function toggleNewPayAmountMode() {
     const mode = document.getElementById('newPayAmountMode').value;
     const labelEl = document.getElementById('newPayAmountLabel');
@@ -2226,6 +2832,7 @@
 
   function addPaymentType() {
     const name = document.getElementById('newPayName').value.trim();
+    const periodType = document.getElementById('newPayPeriodType').value;
     const amountMode = document.getElementById('newPayAmountMode').value;
     const amount = parseThousand(document.getElementById('newPayAmount').value);
     const teacher = document.getElementById('newPayTeacher').value.trim();
@@ -2233,13 +2840,28 @@
 
     if (!name) { alert('Nama jenis pembayaran wajib diisi!'); return; }
 
+    let months = [];
+    if (periodType === 'monthly') {
+      const startM = document.getElementById('newPayStartMonth').value;
+      const endM = document.getElementById('newPayEndMonth').value || startM;
+      if (!startM) { alert('Pilih Bulan Mulai untuk iuran per bulan!'); return; }
+      months = generateMonthRange(startM, endM);
+      if (months.length === 0) {
+        alert('Bulan Selesai tidak boleh lebih awal dari Bulan Mulai!');
+        return;
+      }
+    }
+
     const newId = 'p_' + Date.now();
     state.payments.push({
       id: newId,
       name,
+      periodType,
+      months,
       amountMode,
       amount,
       customAmounts: {},
+      monthlyCustomAmounts: {},
       teacher,
       mandatoryAll,
       participants: mandatoryAll ? [] : state.students.map(s => s.id),
@@ -2265,6 +2887,7 @@
     if (!p) return;
     p.amountMode = mode;
     if (!p.customAmounts) p.customAmounts = {};
+    if (!p.monthlyCustomAmounts) p.monthlyCustomAmounts = {};
     saveState();
     renderSettings();
     if (mode === 'custom') {
@@ -2288,12 +2911,43 @@
     if (!p) return;
     document.getElementById('modalCustomAmountTitle').textContent = `Atur Nominal per Siswa — ${p.name}`;
     document.getElementById('bulkCustomAmountVal').value = '';
+
+    const monthBar = document.getElementById('customAmountMonthBar');
+    const allMonthsWrap = document.getElementById('applyAllMonthsCheckWrap');
+    const mSelect = document.getElementById('customAmountMonthSelect');
+
+    if (p.periodType === 'monthly') {
+      const months = getPaymentMonths(p);
+      monthBar.style.display = 'block';
+      allMonthsWrap.style.display = 'inline-flex';
+      document.getElementById('applyCustomToAllMonths').checked = false;
+      mSelect.innerHTML = '';
+      months.forEach(ym => {
+        const opt = document.createElement('option');
+        opt.value = ym;
+        opt.textContent = formatMonthLabel(ym);
+        mSelect.appendChild(opt);
+      });
+    } else {
+      monthBar.style.display = 'none';
+      allMonthsWrap.style.display = 'none';
+      mSelect.innerHTML = '';
+    }
+
+    renderCustomAmountModalRows();
+    document.getElementById('customAmountModal').classList.add('open');
+  }
+
+  function renderCustomAmountModalRows() {
+    const p = state.payments.find(x => x.id === editingCustomAmountPayId);
+    if (!p) return;
+    const monthKey = p.periodType === 'monthly' ? document.getElementById('customAmountMonthSelect').value : '';
     const tbody = document.getElementById('customAmountModalBody');
     tbody.innerHTML = '';
 
     const participants = state.students.filter(s => isStudentParticipating(p, s.id));
     participants.forEach((s, idx) => {
-      const val = getStudentAmount(p, s.id);
+      const val = getStudentAmount(p, s.id, monthKey);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${idx + 1}</td>
@@ -2304,7 +2958,24 @@
       `;
       tbody.appendChild(tr);
     });
-    document.getElementById('customAmountModal').classList.add('open');
+  }
+
+  function copyCustomAmountsFromPrevMonth() {
+    const p = state.payments.find(x => x.id === editingCustomAmountPayId);
+    if (!p || p.periodType !== 'monthly') return;
+    const months = getPaymentMonths(p);
+    const curMonth = document.getElementById('customAmountMonthSelect').value;
+    const idx = months.indexOf(curMonth);
+    if (idx <= 0) {
+      alert('Ini adalah bulan pertama, belum ada bulan sebelumnya untuk disalin.');
+      return;
+    }
+    const prevMonth = months[idx - 1];
+    document.querySelectorAll('.custom-stu-amt-input').forEach(inp => {
+      const sid = inp.dataset.sid;
+      const prevVal = getStudentAmount(p, sid, prevMonth);
+      inp.value = formatThousand(prevVal);
+    });
   }
 
   function applyBulkCustomAmount() {
@@ -2319,13 +2990,23 @@
   function saveCustomAmountsModal() {
     const p = state.payments.find(x => x.id === editingCustomAmountPayId);
     if (!p) return;
-    if (!p.customAmounts) p.customAmounts = {};
 
+    const entries = {};
     document.querySelectorAll('.custom-stu-amt-input').forEach(inp => {
-      const sid = inp.dataset.sid;
-      const val = Math.max(0, parseThousand(inp.value));
-      p.customAmounts[sid] = val;
+      entries[inp.dataset.sid] = Math.max(0, parseThousand(inp.value));
     });
+
+    if (p.periodType === 'monthly') {
+      if (!p.monthlyCustomAmounts) p.monthlyCustomAmounts = {};
+      const applyAll = document.getElementById('applyCustomToAllMonths').checked;
+      const targetMonths = applyAll ? getPaymentMonths(p) : [document.getElementById('customAmountMonthSelect').value];
+      targetMonths.forEach(mKey => {
+        if (mKey) p.monthlyCustomAmounts[mKey] = { ...entries };
+      });
+    } else {
+      p.customAmounts = { ...entries };
+    }
+
     saveState();
     closeModal('customAmountModal');
     renderSettings();
@@ -2346,28 +3027,31 @@
   function duplicatePaymentType(payId) {
     const p = state.payments.find(x => x.id === payId);
     if (!p) return;
-    const newName = prompt('Masukkan nama untuk iuran/bulan baru:', p.name + ' (Bulan Berikutnya)');
+    const newName = prompt('Masukkan nama untuk iuran baru:', p.name + ' (Salinan)');
     if (!newName || !newName.trim()) return;
 
     state.payments.push({
       id: 'p_' + Date.now(),
       name: newName.trim(),
+      periodType: p.periodType || 'once',
+      months: Array.isArray(p.months) ? [...p.months] : [],
       amountMode: p.amountMode || 'uniform',
       amount: Number(p.amount) || 0,
       teacher: p.teacher || '',
       mandatoryAll: p.mandatoryAll,
       participants: Array.isArray(p.participants) ? [...p.participants] : [],
       customAmounts: p.customAmounts ? { ...p.customAmounts } : {},
+      monthlyCustomAmounts: p.monthlyCustomAmounts ? JSON.parse(JSON.stringify(p.monthlyCustomAmounts)) : {},
       batches: [],
       proofImage: ''
     });
     saveState();
     renderSettings();
-    alert(`Berhasil membuat "${newName.trim()}" beserta pengaturan nominal per siswanya!`);
+    alert(`Berhasil menyalin "${newName.trim()}"!`);
   }
 
   function deletePayment(payId) {
-    if (!confirm('Hapus jenis pembayaran ini beserta data centangnya?')) return;
+    if (!confirm('Hapus jenis pembayaran ini beserta data pembayarannya?')) return;
     state.payments = state.payments.filter(p => p.id !== payId);
     saveState();
     renderSettings();
