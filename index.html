@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVEROX 5 — Manajemen Uang Sekolah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --primary-dark: #0f172a;
+      --primary-soft: #eff6ff;
+      --accent: #0284c7;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --danger-border: #fecaca;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* LOGIN SCREEN OVERLAY */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #071120 0%, #0f2557 50%, #1d4ed8 100%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-screen.hidden {
+      display: none;
+    }
+    .login-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 410px;
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .login-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin: 0 auto 14px;
+      box-shadow: 0 8px 16px rgba(30, 64, 175, 0.28);
+    }
+    .login-card h2 {
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      letter-spacing: -0.02em;
+    }
+    .login-sub {
+      text-align: center;
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-top: 4px;
+      margin-bottom: 22px;
+    }
+    .login-error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: none;
+      text-align: center;
+    }
+    .login-hint {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Password Input with Eye Icon */
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-wrapper input {
+      padding-right: 46px;
+    }
+    .eye-toggle-btn {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .eye-toggle-btn:hover {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+    .eye-toggle-btn.is-visible {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+    .eye-toggle-btn .icon-eye-open {
+      display: block;
+    }
+    .eye-toggle-btn .icon-eye-closed {
+      display: none;
+    }
+    .eye-toggle-btn.is-visible .icon-eye-open {
+      display: none;
+    }
+    .eye-toggle-btn.is-visible .icon-eye-closed {
+      display: block;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #0b192c 0%, #1e3a8a 55%, #1d4ed8 100%);
+      color: white;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.18);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .header-inner {
+      max-width: 1020px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    /* Hamburger Button (Garis Tiga) */
+    .hamburger-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .hamburger-btn:hover {
+      background: rgba(255, 255, 255, 0.24);
+    }
+    .hamburger-btn:active {
+      transform: scale(0.96);
+    }
+    .hamburger-btn span {
+      display: block;
+      width: 20px;
+      height: 2.2px;
+      background: #ffffff;
+      border-radius: 2px;
+    }
+
+    .brand-info {
+      min-width: 0;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 3px;
+      font-size: 0.8rem;
+      color: #bfdbfe;
+      font-weight: 500;
+    }
+
+    .meta-pill {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: #e0f2fe;
+      font-weight: 600;
+      font-size: 0.76rem;
+    }
+
+    .sync-badge {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(167, 243, 208, 0.4);
+      color: #a7f3d0;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .btn-logout-hdr {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-logout-hdr:hover {
+      background: rgba(220, 38, 38, 0.85);
+      border-color: rgba(254, 202, 202, 0.5);
+    }
+
+    /* SIDEBAR DRAWER & OVERLAY */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 900;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .sidebar-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 295px;
+      max-width: 82vw;
+      background: #ffffff;
+      z-index: 950;
+      box-shadow: 10px 0 30px rgba(15, 23, 42, 0.2);
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      background: linear-gradient(135deg, #0b192c 0%, #1e3a8a 100%);
+      color: white;
+      padding: 22px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .drawer-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .drawer-badge {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(255, 255, 255, 0.16);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      color: #93c5fd;
+    }
+    .drawer-close {
+      background: rgba(255, 255, 255, 0.14);
+      border: none;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .drawer-close:hover { background: rgba(255, 255, 255, 0.25); }
+
+    .drawer-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    .drawer-sub {
+      font-size: 0.8rem;
+      color: #bfdbfe;
+      margin-top: 4px;
+    }
+
+    .drawer-nav {
+      padding: 16px 12px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .drawer-section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 8px 12px 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .nav-item:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(30, 64, 175, 0.25);
+    }
+    .nav-item.nav-danger:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+    .nav-item-icon {
+      font-size: 1.15rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .drawer-footer {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .drawer-footer strong {
+      color: var(--text);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* Container & Cards */
+    .container {
+      max-width: 1020px;
+      margin: 22px auto;
+      padding: 0 16px;
+    }
+
+    .tab-content { display: none; animation: fadeIn 0.25s ease; }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-breadcrumb {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .page-breadcrumb h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      letter-spacing: -0.01em;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      border-left: 4px solid var(--primary);
+    }
+
+    .stat-box.stat-success { border-left-color: var(--success); }
+    .stat-box.stat-danger { border-left-color: var(--danger); }
+    .stat-box.stat-accent { border-left-color: var(--accent); }
+
+    .stat-label {
+      font-size: 0.74rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-val {
+      font-size: 1.38rem;
+      font-weight: 800;
+      margin-top: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    /* Forms & Inputs */
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .form-group { flex: 1; min-width: 195px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    input[type="text"], input[type="password"], input[type="number"], input[type="email"], select, textarea {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary-hover);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: white;
+      box-shadow: 0 2px 6px rgba(30, 64, 175, 0.25);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+    }
+
+    .btn-success {
+      background: #059669;
+      color: white;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+    }
+    .btn-success:hover { background: #047857; }
+
+    .btn-warning {
+      background: #0284c7;
+      color: white;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+    }
+    .btn-warning:hover { background: #0369a1; }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-secondary);
+    }
+    .btn-outline:hover {
+      background: var(--primary-soft);
+      border-color: #93c5fd;
+      color: var(--primary);
+    }
+
+    .btn-sm { padding: 7px 12px; font-size: 0.8rem; border-radius: 8px; }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+    th, td {
+      padding: 13px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #334155;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: #f8fafc; }
+
+    /* Custom Checkbox */
+    .chk-big {
+      width: 22px;
+      height: 22px;
+      accent-color: #1d4ed8;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    /* Badges */
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-lunas {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success-border);
+    }
+
+    .badge-belum {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-non {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
+
+    .badge-dipegang {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid #fde68a;
+    }
+
+    .stat-box.stat-warning { border-left-color: var(--warning); }
+
+    .chk-guru {
+      width: 22px;
+      height: 22px;
+      accent-color: #059669;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    /* Group WA Alert Card */
+    .wa-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Photo Proof Box */
+    .proof-box {
+      border: 2px dashed #93c5fd;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      background: #f8fafc;
+      margin-top: 12px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .proof-box:hover {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .proof-preview {
+      max-width: 100%;
+      max-height: 280px;
+      border-radius: 10px;
+      margin-top: 12px;
+      cursor: zoom-in;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Modal / Lightbox */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-bg.open { display: flex; }
+
+    .modal-box {
+      background: white;
+      border-radius: 16px;
+      max-width: 540px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 22px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+    }
+
+    .lightbox-img { max-width: 95vw; max-height: 90vh; border-radius: 12px; box-shadow: var(--shadow-lg); }
+
+    .student-chip-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .student-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HALAMAN LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🔐</div>
+    <h2 id="loginTitle">AVEROX 5</h2>
+    <p class="login-sub" id="loginSub">Masuk untuk mengelola uang sekolah</p>
+
+    <div class="login-error" id="loginError">Username atau kata sandi salah!</div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Masukkan username" autocomplete="username" required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label>Kata Sandi</label>
+        <div class="password-wrapper">
+          <input type="password" id="loginPass" placeholder="Masukkan kata sandi" autocomplete="current-password" required />
+          <button type="button" class="eye-toggle-btn" onclick="togglePasswordVisibility('loginPass', this)" aria-label="Tampilkan atau Sembunyikan Kata Sandi" title="Lihat Kata Sandi">
+            <svg class="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="icon-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+              <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+              <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+              <line x1="2" x2="22" y1="2" y2="22"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">Masuk ke Aplikasi</button>
+    </form>
+
+    <div class="login-hint" id="loginHintBox">
+      Default awal — Username: <strong>admin</strong> | Sandi: <strong>12345</strong><br/>
+      <span style="font-size:0.73rem;">(Dapat diubah kapan saja di menu Pengaturan)</span>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY (KLIK DI LUAR UNTUK MENUTUP MENU) -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- SIDEBAR MENU (DARI GARIS TIGA KIRI ATAS) -->
+<aside class="sidebar-drawer" id="sidebarDrawer" aria-label="Menu Utama">
+  <div class="drawer-header">
+    <div class="drawer-header-top">
+      <span class="drawer-badge" id="drawerClassBadge">KELAS VIII.5</span>
+      <button class="drawer-close" onclick="closeDrawer()" title="Tutup Menu">✕</button>
+    </div>
+    <div class="drawer-title" id="drawerAppTitle">AVEROX 5</div>
+    <div class="drawer-sub" id="drawerTeacherSub">Wali Kelas: Rachel Sanders, S.Pd</div>
+  </div>
+
+  <nav class="drawer-nav">
+    <div class="drawer-section-label">Menu Utama</div>
+    <button class="nav-item active" data-tab="checklist" onclick="selectMenuTab('checklist')">
+      <span class="nav-item-icon">✅</span>
+      <span>Input Centang & Bukti</span>
+    </button>
+    <button class="nav-item" data-tab="rekap" onclick="selectMenuTab('rekap')">
+      <span class="nav-item-icon">📊</span>
+      <span>Cek Belum Bayar & Tagih</span>
+    </button>
+
+    <div class="drawer-section-label" style="margin-top:8px;">Administrasi & Akun</div>
+    <button class="nav-item" data-tab="pengaturan" onclick="selectMenuTab('pengaturan')">
+      <span class="nav-item-icon">⚙️</span>
+      <span>Pengaturan Kelas, Iuran & Akun</span>
+    </button>
+    <button class="nav-item" onclick="exportData(); closeDrawer();">
+      <span class="nav-item-icon">💾</span>
+      <span>Unduh Backup Data (JSON)</span>
+    </button>
+    <button class="nav-item nav-danger" onclick="logoutApp()">
+      <span class="nav-item-icon">🚪</span>
+      <span>Keluar / Kunci Layar</span>
+    </button>
+  </nav>
+
+  <div class="drawer-footer">
+    Penanggung Jawab Kelas:
+    <strong id="drawerFooterTeacher">Ibu Rina Marlina, S.Pd</strong>
+  </div>
+</aside>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <button class="hamburger-btn" onclick="openDrawer()" aria-label="Buka Menu" title="Buka Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="brand-info">
+        <h1 id="headerAppTitle">Iuran yang ada di Sekolah</h1>
+        <div class="header-meta">
+          <span class="meta-pill" id="headerClassBadge">Kelas VIII.5</span>
+          <span>•</span>
+          <span id="headerTeacherName">Wali Kelas: Rachel Sanders, S.Pd</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="sync-badge" id="syncStatusBadge">⏳ Memuat...</span>
+      <button class="btn-logout-hdr" onclick="logoutApp()" title="Kunci Aplikasi">🔒 Keluar</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- TAB 1: CHECKLIST & BUKTI FOTO -->
+  <div id="tab-checklist" class="tab-content active">
+    <div class="page-breadcrumb">
+      <h2>✅ Input Pembayaran & Bukti Setor Guru</h2>
+    </div>
+
+    <div class="card">
+      <div class="form-row" style="align-items: end; margin-bottom: 0;">
+        <div class="form-group">
+          <label>Pilih Jenis Pembayaran:</label>
+          <select id="selectPaymentType" onchange="renderChecklist()"></select>
+        </div>
+        <div class="form-group" style="max-width: 240px;">
+          <label>Filter Tampilan:</label>
+          <select id="filterChecklist" onchange="renderChecklist()">
+            <option value="all">Semua Peserta Iuran</option>
+            <option value="unpaid">Belum Bayar Saja</option>
+            <option value="held">Dipegang Saya (Belum ke Guru)</option>
+            <option value="handed">Sudah Disetor ke Guru</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="paymentStats"></div>
+
+    <div class="card">
+      <div class="card-title">
+        <span id="checklistTitle">Daftar Siswa</span>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-outline" onclick="markAllVisible(true)">✓ Semua Bayar ke Saya</button>
+          <button class="btn btn-sm btn-success" onclick="markAllHandedToTeacher()">🤝 Setor Semua ke Guru</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:45px;">No</th>
+              <th>Nama Siswa</th>
+              <th style="width:165px;">Status Dana</th>
+              <th style="width:115px;">Tgl Bayar</th>
+              <th style="width:105px; text-align:center;">Bayar ke Saya</th>
+              <th style="width:115px; text-align:center;">Disetor ke Guru</th>
+            </tr>
+          </thead>
+          <tbody id="checklistBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bukti Foto Penyerahan ke Guru -->
+    <div class="card">
+      <div class="card-title">
+        <span>📸 Bukti Penyerahan Uang ke Guru PJ</span>
+        <span id="guruPjBadge" class="badge badge-non"></span>
+      </div>
+      <p style="font-size:0.85rem; color:var(--muted);">Unggah atau jepret foto kwitansi / penyerahan uang untuk jenis pembayaran yang sedang dipilih.</p>
+      <div class="proof-box">
+        <input type="file" id="proofInput" accept="image/*" style="display:none;" onchange="handleProofUpload(event)" />
+        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('proofInput').click()">📷 Pilih / Jepret Foto Bukti</button>
+          <button class="btn btn-danger btn-sm" id="btnRemoveProof" style="display:none;" onclick="removeProof()">🗑️ Hapus Foto</button>
+        </div>
+        <div id="proofPreviewContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: REKAP BELUM BAYAR & KIRIM WA / EMAIL -->
+  <div id="tab-rekap" class="tab-content">
+    <div class="page-breadcrumb">
+      <h2>📊 Rekap Tunggakan & Kirim Pengingat</h2>
+    </div>
+
+    <div class="card wa-card">
+      <div class="card-title">
+        <span style="color:#1e3a8a;">📢 Kirim Rekap Penunggak ke Grup Kelas</span>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-success btn-sm" onclick="sendGroupWA()">📲 Kirim ke Grup WA</button>
+          <button class="btn btn-outline btn-sm" onclick="copyGroupText()">📋 Salin Teks</button>
+        </div>
+      </div>
+      <p style="font-size:0.83rem; color:#1e40af; margin-bottom:10px;">Teks di bawah otomatis hanya memuat siswa yang masih memiliki tunggakan beserta jenis iurannya:</p>
+      <textarea id="groupWaPreview" rows="6" readonly style="font-size:0.84rem; background:#ffffff; border-color:#bfdbfe;"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Tabel Siswa Belum Bayar (Semua Jenis Iuran)</span>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; margin:0;">
+          <input type="checkbox" id="onlyUnpaidToggle" checked onchange="renderRekap()" style="accent-color:#1d4ed8;" /> Tampilkan yang belum lunas saja
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:45px;">No</th>
+              <th>Nama Siswa</th>
+              <th>Jenis Iuran Belum Bayar</th>
+              <th>Total Tunggakan</th>
+              <th style="width:170px;">Tagih Pribadi</th>
+            </tr>
+          </thead>
+          <tbody id="rekapBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: PENGATURAN (IDENTITAS KELAS, AKUN LOGIN, JENIS IURAN, SISWA & BACKUP) -->
+  <div id="tab-pengaturan" class="tab-content">
+    <div class="page-breadcrumb">
+      <h2>⚙️ Pengaturan Aplikasi, Akun & Iuran</h2>
+    </div>
+
+    <!-- Koneksi Database Google Sheets -->
+    <div class="card" style="border-top: 4px solid var(--success);">
+      <div class="card-title">🔗 Koneksi Database Google Spreadsheets</div>
+      <p style="font-size:0.83rem; color:var(--muted); margin-bottom:10px;">
+        Tempelkan URL Web App Google Apps Script (<code>.../exec</code>) Anda di bawah ini agar data tersinkron otomatis ke Google Sheets di semua HP/laptop:
+      </p>
+      <div class="form-row" style="margin-bottom:8px;">
+        <div class="form-group">
+          <input type="text" id="inputApiUrl" placeholder="https://script.google.com/macros/s/...../exec" />
+        </div>
+        <button class="btn btn-success" onclick="saveApiUrlSetting()">💾 Hubungkan & Simpan URL</button>
+      </div>
+    </div>
+
+    <!-- Identitas Judul, Kelas & Wali Kelas -->
+    <div class="card" style="border-top: 4px solid var(--primary);">
+      <div class="card-title">🏫 Identitas Judul, Kelas & Wali Kelas</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Judul Aplikasi / Header</label>
+          <input type="text" id="inputAppTitle" placeholder="Contoh: KasKelas Pro / Administrasi Kelas" />
+        </div>
+        <div class="form-group">
+          <label>Nama Kelas</label>
+          <input type="text" id="inputClassName" placeholder="Contoh: Kelas XII IPA 1" />
+        </div>
+        <div class="form-group">
+          <label>Nama Wali Kelas</label>
+          <input type="text" id="inputHomeroomTeacher" placeholder="Contoh: Ibu Rina Marlina, S.Pd" />
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <button class="btn btn-primary" onclick="saveIdentitySettings()">💾 Simpan Identitas Kelas</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="exportData()">⬇️ Export Backup</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">⬆️ Import Backup</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)" />
+          <button class="btn btn-danger btn-sm" onclick="resetDefaultData()">🔄 Reset Contoh</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengaturan Username & Kata Sandi -->
+    <div class="card" style="border-top: 4px solid var(--accent);">
+      <div class="card-title">🔐 Ubah Username & Kata Sandi Login</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username Baru</label>
+          <input type="text" id="inputSettingUsername" placeholder="Masukkan username baru" />
+        </div>
+        <div class="form-group">
+          <label>Kata Sandi Baru</label>
+          <div class="password-wrapper">
+            <input type="password" id="inputSettingPassword" placeholder="Masukkan kata sandi baru" />
+            <button type="button" class="eye-toggle-btn" onclick="togglePasswordVisibility('inputSettingPassword', this)" aria-label="Lihat atau Sembunyikan Sandi" title="Lihat Kata Sandi">
+              <svg class="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="icon-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                <line x1="2" x2="22" y1="2" y2="22"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Konfirmasi Kata Sandi</label>
+          <div class="password-wrapper">
+            <input type="password" id="inputSettingPasswordConfirm" placeholder="Ulangi kata sandi baru" />
+            <button type="button" class="eye-toggle-btn" onclick="togglePasswordVisibility('inputSettingPasswordConfirm', this)" aria-label="Lihat atau Sembunyikan Konfirmasi Sandi" title="Lihat Kata Sandi">
+              <svg class="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="icon-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                <line x1="2" x2="22" y1="2" y2="22"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveCredentials()">🔑 Simpan Username & Kata Sandi</button>
+    </div>
+
+    <!-- Tambah Jenis Pembayaran -->
+    <div class="card">
+      <div class="card-title">➕ Tambah Jenis Pembayaran Baru</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nama Pembayaran (misal: Uang Pensiun, OSIS)</label>
+          <input type="text" id="newPayName" placeholder="Contoh: Uang Kas Bulan Desember" />
+        </div>
+        <div class="form-group" style="max-width:180px;">
+          <label>Nominal (Rp)</label>
+          <input type="number" id="newPayAmount" placeholder="15000" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Guru Penanggung Jawab</label>
+          <input type="text" id="newPayTeacher" placeholder="Contoh: Bu Siti (Bendahara)" />
+        </div>
+        <div class="form-group">
+          <label>Kepesertaan Siswa</label>
+          <select id="newPayMandatory">
+            <option value="all">Wajib Semua Siswa</option>
+            <option value="selected">Pilihan (Hanya Siswa Tertentu)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addPaymentType()">💾 Simpan Jenis Pembayaran</button>
+
+      <div class="table-wrap" style="margin-top:18px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Jenis Pembayaran</th>
+              <th>Nominal</th>
+              <th>Guru PJ</th>
+              <th>Kepesertaan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="paymentSettingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Kelola Siswa -->
+    <div class="card">
+      <div class="card-title">
+        <span>👨‍🎓 Daftar Siswa Kelas</span>
+        <button class="btn btn-outline btn-sm" onclick="openBulkModal()">📥 Impor Banyak Nama Sekaligus</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nama Siswa</label>
+          <input type="text" id="newStudentName" placeholder="Nama lengkap siswa" />
+        </div>
+        <div class="form-group">
+          <label>No. WA (awalan 628...)</label>
+          <input type="text" id="newStudentWa" placeholder="628123456789" />
+        </div>
+        <div class="form-group">
+          <label>Email Siswa</label>
+          <input type="email" id="newStudentEmail" placeholder="siswa@email.com" />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addStudent()">➕ Tambah Siswa</button>
+
+      <div class="table-wrap" style="margin-top:18px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:45px;">No</th>
+              <th>Nama Siswa</th>
+              <th>No. WA</th>
+              <th>Email</th>
+              <th style="width:70px;">Hapus</th>
+            </tr>
+          </thead>
+          <tbody id="studentSettingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL PILIH PESERTA KHUSUS (TANPA HAPUS SISWA) -->
+<div class="modal-bg" id="participantModal" onclick="if(event.target===this) closeModal('participantModal')">
+  <div class="modal-box">
+    <div class="card-title">
+      <span id="modalParticipantTitle">Pilih Siswa yang Wajib Bayar</span>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('participantModal')">✕</button>
+    </div>
+    <p style="font-size:0.83rem; color:var(--muted);">Centang siswa yang mengikuti iuran ini. Siswa yang tidak dicentang tidak akan dihitung sebagai penunggak dan tetap ada di data kelas.</p>
+    <div style="margin-top:10px; display:flex; gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="toggleAllParticipants(true)">Pilih Semua</button>
+      <button class="btn btn-sm btn-outline" onclick="toggleAllParticipants(false)">Kosongkan Semua</button>
+    </div>
+    <div class="student-chip-list" id="participantList"></div>
+    <div style="text-align:right; margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveParticipants()">✅ Simpan Peserta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPOR MASSAL SISWA -->
+<div class="modal-bg" id="bulkModal" onclick="if(event.target===this) closeModal('bulkModal')">
+  <div class="modal-box">
+    <div class="card-title">
+      <span>📥 Impor Banyak Siswa</span>
+      <button class="btn btn-sm btn-outline" onclick="closeModal('bulkModal')">✕</button>
+    </div>
+    <p style="font-size:0.83rem; color:var(--muted); margin-bottom:10px;">Tempel daftar siswa (1 baris 1 siswa). Format: <code>Nama, NoWA, Email</code> (NoWA dan Email opsional).</p>
+    <textarea id="bulkText" rows="7" placeholder="Ahmad Fauzi, 6281234567890, ahmad@gmail.com&#10;Budi Santoso, 6281298765432&#10;Citra Lestari"></textarea>
+    <div style="text-align:right; margin-top:14px;">
+      <button class="btn btn-primary" onclick="processBulkStudents()">➕ Tambahkan Semua</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX FOTO -->
+<div class="modal-bg" id="lightboxModal" onclick="closeModal('lightboxModal')">
+  <img id="lightboxImg" class="lightbox-img" src="" alt="Bukti Penyerahan" />
+</div>
+
+<script>
+  const STORAGE_KEY = 'kaskelas_pro_v3';
+  const SESSION_KEY = 'kaskelas_pro_logged_in';
+  const API_STORAGE_KEY = 'kaskelas_pro_api_url';
+
+  // Anda bisa langsung menempelkan URL /exec di sini atau lewat menu Pengaturan di aplikasi
+  const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyOGFbjeOsCmwKWK6D8oy7VjqXa__NAqXnDkjdhX9eIKh7pnbHgqCADU24PxDZB2JIr/exec";
+
+  function getApiUrl() {
+    return (localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL).trim();
+  }
+
+  const defaultState = {
+    auth: {
+      username: 'admin',
+      password: '12345',
+      isCustom: false
+    },
+    appTitle: 'KasKelas Pro',
+    className: 'Kelas XII IPA 1',
+    homeroomTeacher: 'Ibu Rina Marlina, S.Pd',
+    students: [
+      { id: 's1', name: 'Ahmad Fauzi', wa: '6281234567890', email: 'ahmad@contoh.com' },
+      { id: 's2', name: 'Budi Santoso', wa: '6281234567891', email: 'budi@contoh.com' },
+      { id: 's3', name: 'Citra Lestari', wa: '6281234567892', email: 'citra@contoh.com' },
+      { id: 's4', name: 'Dewi Anggraini', wa: '6281234567893', email: 'dewi@contoh.com' },
+      { id: 's5', name: 'Eko Prasetyo', wa: '6281234567894', email: 'eko@contoh.com' }
+    ],
+    payments: [
+      { id: 'p1', name: 'Uang Pensiun Guru', amount: 15000, teacher: 'Bu Siti (Bendahara)', mandatoryAll: true, participants: [], proofImage: '' },
+      { id: 'p2', name: 'Iuran OSIS', amount: 10000, teacher: 'Pak Rahmat (Pembina OSIS)', mandatoryAll: true, participants: [], proofImage: '' },
+      { id: 'p3', name: 'Sumbangan Sukarela / Kegiatan', amount: 20000, teacher: 'Bu Rina (Wali Kelas)', mandatoryAll: false, participants: ['s1', 's2', 's4'], proofImage: '' }
+    ],
+    records: {
+      'p1_s1': { paid: true, date: '2026-11-20' },
+      'p1_s2': { paid: true, date: '2026-11-21' },
+      'p2_s1': { paid: true, date: '2026-11-20' }
+    }
+  };
+
+  let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(JSON.stringify(defaultState));
+  if (!state.auth) state.auth = { username: 'admin', password: '12345', isCustom: false };
+  if (!state.appTitle) state.appTitle = defaultState.appTitle;
+  if (!state.homeroomTeacher) state.homeroomTeacher = defaultState.homeroomTeacher;
+  let editingPaymentId = null;
+
+  function updateSyncBadge(text) {
+    const el = document.getElementById('syncStatusBadge');
+    if (el) el.textContent = text;
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const apiUrl = getApiUrl();
+    if (!apiUrl) {
+      updateSyncBadge("💾 Lokal");
+      return;
+    }
+
+    updateSyncBadge("⏳ Menyimpan...");
+    fetch(apiUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(state)
+    })
+    .then(() => {
+      updateSyncBadge("☁️ Tersinkron");
+    })
+    .catch(() => {
+      updateSyncBadge("⚠️ Offline (Lokal)");
+    });
+  }
+
+  function loadFromSheets() {
+    const apiUrl = getApiUrl();
+    if (!apiUrl) {
+      updateSyncBadge("💾 Lokal");
+      return;
+    }
+
+    updateSyncBadge("⏳ Memuat...");
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "success" && res.data && res.data.students && res.data.payments) {
+          state = res.data;
+          if (!state.auth) state.auth = { username: 'admin', password: '12345', isCustom: false };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          checkAuth();
+          renderIdentityUI();
+          renderChecklist();
+        }
+        updateSyncBadge("☁️ Tersinkron");
+      })
+      .catch(() => {
+        updateSyncBadge("⚠️ Offline (Lokal)");
+      });
+  }
+
+  function saveApiUrlSetting() {
+    const url = document.getElementById('inputApiUrl').value.trim();
+    localStorage.setItem(API_STORAGE_KEY, url);
+    if (url) {
+      alert('URL Google Sheets disimpan! Mencoba sinkronisasi data...');
+      loadFromSheets();
+    } else {
+      updateSyncBadge("💾 Lokal");
+      alert('URL dikosongkan. Aplikasi berjalan dalam mode penyimpanan lokal.');
+    }
+  }
+
+  /* TOGGLE IKON MATA KATA SANDI (TERBUKA = TERSEMBUNYI, DICORET = TERLIHAT) */
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.classList.add('is-visible');
+      btn.title = 'Sembunyikan Kata Sandi';
+    } else {
+      input.type = 'password';
+      btn.classList.remove('is-visible');
+      btn.title = 'Lihat Kata Sandi';
+    }
+  }
+
+  function resetAllPasswordFields() {
+    document.querySelectorAll('.password-wrapper').forEach(wrapper => {
+      const input = wrapper.querySelector('input');
+      const btn = wrapper.querySelector('.eye-toggle-btn');
+      if (input) input.type = 'password';
+      if (btn) {
+        btn.classList.remove('is-visible');
+        btn.title = 'Lihat Kata Sandi';
+      }
+    });
+  }
+
+  /* AUTENTIKASI LOGIN / LOGOUT */
+  function checkAuth() {
+    const isLogged = sessionStorage.getItem(SESSION_KEY) === 'true';
+    const screen = document.getElementById('loginScreen');
+    document.getElementById('loginTitle').textContent = state.appTitle || 'KasKelas Pro';
+    document.getElementById('loginSub').textContent = `${state.className} — Wali Kelas: ${state.homeroomTeacher}`;
+    document.getElementById('loginHintBox').style.display = state.auth.isCustom ? 'none' : 'block';
+
+    if (isLogged) {
+      screen.classList.add('hidden');
+    } else {
+      screen.classList.remove('hidden');
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginError').style.display = 'none';
+      resetAllPasswordFields();
+    }
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+
+    if (u === state.auth.username && p === state.auth.password) {
+      sessionStorage.setItem(SESSION_KEY, 'true');
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('loginError').style.display = 'none';
+      resetAllPasswordFields();
+    } else {
+      const err = document.getElementById('loginError');
+      err.style.display = 'block';
+    }
+  }
+
+  function logoutApp() {
+    closeDrawer();
+    sessionStorage.removeItem(SESSION_KEY);
+    checkAuth();
+  }
+
+  function saveCredentials() {
+    const newUser = document.getElementById('inputSettingUsername').value.trim();
+    const newPass = document.getElementById('inputSettingPassword').value;
+    const confirmPass = document.getElementById('inputSettingPasswordConfirm').value;
+
+    if (!newUser) {
+      alert('Username tidak boleh kosong!');
+      return;
+    }
+    if (!newPass) {
+      alert('Kata sandi baru tidak boleh kosong!');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      alert('Konfirmasi kata sandi tidak cocok!');
+      return;
+    }
+
+    state.auth.username = newUser;
+    state.auth.password = newPass;
+    state.auth.isCustom = true;
+    saveState();
+    resetAllPasswordFields();
+    alert('Username dan kata sandi berhasil diperbarui! Gunakan akun baru ini saat login berikutnya.');
+  }
+
+  /* DRAWER (MENU GARIS TIGA) */
+  function openDrawer() {
+    document.getElementById('sidebarDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+  }
+
+  function closeDrawer() {
+    document.getElementById('sidebarDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  function selectMenuTab(tabName) {
+    switchTab(tabName);
+    closeDrawer();
+  }
+
+  function renderIdentityUI() {
+    const title = state.appTitle || 'KasKelas Pro';
+    const cls = state.className || 'Kelas XII IPA 1';
+    const teacher = state.homeroomTeacher || '-';
+
+    document.title = `${title} — ${cls}`;
+    document.getElementById('headerAppTitle').textContent = title;
+    document.getElementById('headerClassBadge').textContent = cls;
+    document.getElementById('headerTeacherName').textContent = `Wali Kelas: ${teacher}`;
+
+    document.getElementById('drawerAppTitle').textContent = title;
+    document.getElementById('drawerClassBadge').textContent = cls;
+    document.getElementById('drawerTeacherSub').textContent = `Wali Kelas: ${teacher}`;
+    document.getElementById('drawerFooterTeacher').textContent = teacher;
+  }
+
+  function formatRp(num) {
+    return 'Rp' + (Number(num) || 0).toLocaleString('id-ID');
+  }
+
+  function isStudentParticipating(payment, studentId) {
+    if (payment.mandatoryAll) return true;
+    return Array.isArray(payment.participants) && payment.participants.includes(studentId);
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.nav-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
+    if (tabName === 'checklist') renderChecklist();
+    if (tabName === 'rekap') renderRekap();
+    if (tabName === 'pengaturan') renderSettings();
+  }
+
+  function renderPaymentDropdown() {
+    const sel = document.getElementById('selectPaymentType');
+    const prev = sel.value;
+    sel.innerHTML = '';
+    state.payments.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.name} (${formatRp(p.amount)}) — ${p.mandatoryAll ? 'Wajib Semua' : 'Pilihan'}`;
+      sel.appendChild(opt);
+    });
+    if (state.payments.some(p => p.id === prev)) sel.value = prev;
+  }
+
+  function renderChecklist() {
+    renderPaymentDropdown();
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    const tbody = document.getElementById('checklistBody');
+    const statsEl = document.getElementById('paymentStats');
+
+    if (!payment) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada jenis pembayaran. Tambahkan di menu Pengaturan.</td></tr>';
+      return;
+    }
+
+    const filter = document.getElementById('filterChecklist').value;
+    const participants = state.students.filter(s => isStudentParticipating(payment, s.id));
+    let paidCount = 0;
+    let handedCount = 0;
+    participants.forEach(s => {
+      const r = state.records[`${payment.id}_${s.id}`];
+      if (r?.paid) {
+        paidCount++;
+        if (r?.handedToTeacher) handedCount++;
+      }
+    });
+
+    const heldCount = paidCount - handedCount;
+    const unpaidCount = participants.length - paidCount;
+    const heldAmount = heldCount * payment.amount;
+    const handedAmount = handedCount * payment.amount;
+    const target = participants.length * payment.amount;
+
+    statsEl.innerHTML = `
+      <div class="stat-box stat-warning"><div class="stat-label">Dipegang Saya (Belum ke Guru)</div><div class="stat-val" style="color:var(--warning);">${formatRp(heldAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${heldCount} Siswa</div></div>
+      <div class="stat-box stat-success"><div class="stat-label">Sudah Disetor ke Guru</div><div class="stat-val" style="color:var(--success);">${formatRp(handedAmount)}</div><div style="font-size:0.76rem; color:var(--muted); margin-top:2px;">${handedCount} / ${participants.length} Siswa</div></div>
+      <div class="stat-box"><div class="stat-label">Target Total</div><div class="stat-val" style="color:var(--primary);">${formatRp(target)}</div></div>
+      <div class="stat-box stat-danger"><div class="stat-label">Belum Bayar</div><div class="stat-val" style="color:var(--danger);">${unpaidCount} Siswa</div></div>
+    `;
+
+    document.getElementById('checklistTitle').textContent = `Daftar Siswa — ${payment.name}`;
+    document.getElementById('guruPjBadge').textContent = `PJ: ${payment.teacher || '-'}`;
+
+    tbody.innerHTML = '';
+    let rowNum = 0;
+    participants.forEach(s => {
+      const rec = state.records[`${payment.id}_${s.id}`] || { paid: false, date: '', handedToTeacher: false };
+      const isPaid = !!rec.paid;
+      const isHanded = isPaid && !!rec.handedToTeacher;
+
+      if (filter === 'unpaid' && isPaid) return;
+      if (filter === 'held' && !(isPaid && !isHanded)) return;
+      if (filter === 'handed' && !isHanded) return;
+      rowNum++;
+
+      let statusBadge = '<span class="badge badge-belum">• BELUM BAYAR</span>';
+      if (isPaid && !isHanded) {
+        statusBadge = '<span class="badge badge-dipegang">👛 DIPEGANG SAYA</span>';
+      } else if (isPaid && isHanded) {
+        statusBadge = '<span class="badge badge-lunas">🤝 DISETOR GURU</span>';
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${rowNum}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>${statusBadge}</td>
+        <td style="font-size:0.82rem; color:var(--muted);">${isPaid ? (rec.date || 'Hari ini') : '-'}</td>
+        <td style="text-align:center;">
+          <input type="checkbox" class="chk-big" ${isPaid ? 'checked' : ''} onchange="togglePayment('${payment.id}', '${s.id}', this.checked)" title="Centang jika siswa sudah bayar ke Anda" />
+        </td>
+        <td style="text-align:center;">
+          <input type="checkbox" class="chk-guru" ${isHanded ? 'checked' : ''} ${!isPaid ? 'disabled' : ''} onchange="toggleHandedToTeacher('${payment.id}', '${s.id}', this.checked)" title="${isPaid ? 'Centang jika uang sudah diserahkan ke Guru PJ' : 'Siswa belum membayar ke Anda'}" />
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (rowNum === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">Tidak ada data siswa pada filter ini.</td></tr>';
+    }
+
+    const prevContainer = document.getElementById('proofPreviewContainer');
+    const btnRemove = document.getElementById('btnRemoveProof');
+    if (payment.proofImage) {
+      btnRemove.style.display = 'inline-flex';
+      prevContainer.innerHTML = `<img src="${payment.proofImage}" class="proof-preview" onclick="openLightbox('${payment.proofImage}')" title="Klik untuk memperbesar" />`;
+    } else {
+      btnRemove.style.display = 'none';
+      prevContainer.innerHTML = `<p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">Belum ada bukti foto penyerahan untuk iuran ini.</p>`;
+    }
+  }
+
+  function togglePayment(payId, studentId, isPaid) {
+    const today = new Date().toISOString().slice(0, 10);
+    const prev = state.records[`${payId}_${studentId}`] || {};
+    state.records[`${payId}_${studentId}`] = {
+      paid: isPaid,
+      date: isPaid ? (prev.date || today) : '',
+      handedToTeacher: isPaid ? (prev.handedToTeacher || false) : false
+    };
+    saveState();
+    renderChecklist();
+  }
+
+  function toggleHandedToTeacher(payId, studentId, isHanded) {
+    const prev = state.records[`${payId}_${studentId}`];
+    if (!prev || !prev.paid) return;
+    prev.handedToTeacher = isHanded;
+    saveState();
+    renderChecklist();
+  }
+
+  function markAllVisible(status) {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+    const today = new Date().toISOString().slice(0, 10);
+    state.students.forEach(s => {
+      if (isStudentParticipating(payment, s.id)) {
+        const prev = state.records[`${payId}_${s.id}`] || {};
+        state.records[`${payId}_${s.id}`] = {
+          paid: status,
+          date: status ? (prev.date || today) : '',
+          handedToTeacher: status ? (prev.handedToTeacher || false) : false
+        };
+      }
+    });
+    saveState();
+    renderChecklist();
+  }
+
+  function markAllHandedToTeacher() {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+    let count = 0;
+    state.students.forEach(s => {
+      if (isStudentParticipating(payment, s.id)) {
+        const rec = state.records[`${payId}_${s.id}`];
+        if (rec && rec.paid && !rec.handedToTeacher) {
+          rec.handedToTeacher = true;
+          count++;
+        }
+      }
+    });
+    if (count === 0) {
+      alert('Tidak ada dana yang sedang dipegang Anda untuk disetor pada iuran ini.');
+      return;
+    }
+    saveState();
+    renderChecklist();
+    alert(`Berhasil menandai ${count} siswa sudah disetor ke Guru PJ!`);
+  }
+
+  function handleProofUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (!payment) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const maxW = 800;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        payment.proofImage = canvas.toDataURL('image/jpeg', 0.65);
+        saveState();
+        renderChecklist();
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function removeProof() {
+    const payId = document.getElementById('selectPaymentType').value;
+    const payment = state.payments.find(p => p.id === payId);
+    if (payment && confirm('Hapus bukti foto untuk iuran ini?')) {
+      payment.proofImage = '';
+      saveState();
+      renderChecklist();
+    }
+  }
+
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightboxModal').classList.add('open');
+  }
+
+  // TAB 2: REKAP & TAGIHAN
+  function getUnpaidSummary() {
+    return state.students.map(s => {
+      const unpaidItems = [];
+      let total = 0;
+      state.payments.forEach(p => {
+        if (isStudentParticipating(p, s.id)) {
+          const paid = state.records[`${p.id}_${s.id}`]?.paid;
+          if (!paid) {
+            unpaidItems.push(`${p.name} (${formatRp(p.amount)})`);
+            total += Number(p.amount) || 0;
+          }
+        }
+      });
+      return { student: s, unpaidItems, total };
+    });
+  }
+
+  function renderRekap() {
+    const summary = getUnpaidSummary();
+    const onlyUnpaid = document.getElementById('onlyUnpaidToggle').checked;
+    const tbody = document.getElementById('rekapBody');
+    tbody.innerHTML = '';
+
+    const debtors = summary.filter(item => item.total > 0);
+    let groupMsg = `📢 *REKAP IURAN ${state.className.toUpperCase()} (BELUM LUNAS)*\nWali Kelas: ${state.homeroomTeacher}\n\n`;
+    if (debtors.length === 0) {
+      groupMsg += '✅ Alhamdulillah, seluruh siswa sudah melunasi semua iuran!';
+    } else {
+      debtors.forEach((d, idx) => {
+        groupMsg += `${idx + 1}. *${d.student.name}* — ${d.unpaidItems.join(', ')} (Total: ${formatRp(d.total)})\n`;
+      });
+      groupMsg += `\nMohon segera diselesaikan ya teman-teman. Terima kasih 🙏`;
+    }
+    document.getElementById('groupWaPreview').value = groupMsg;
+
+    let count = 0;
+    summary.forEach(item => {
+      if (onlyUnpaid && item.total === 0) return;
+      count++;
+      const s = item.student;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${count}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>${item.total > 0 ? item.unpaidItems.join(', ') : '<span class="badge badge-lunas">✓ Semua Lunas</span>'}</td>
+        <td><strong style="color:${item.total > 0 ? 'var(--danger)' : 'var(--success)'};">${formatRp(item.total)}</strong></td>
+        <td>
+          ${item.total > 0 ? `
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-success btn-sm" onclick="sendPersonalWA('${s.id}')">💬 WA</button>
+              <button class="btn btn-warning btn-sm" onclick="sendPersonalEmail('${s.id}')">✉️ Email</button>
+            </div>
+          ` : '-'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (count === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--success); font-weight:600;">🎉 Semua siswa sudah melunasi seluruh pembayaran!</td></tr>';
+    }
+  }
+
+  function sendGroupWA() {
+    const text = document.getElementById('groupWaPreview').value;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+
+  function copyGroupText() {
+    const el = document.getElementById('groupWaPreview');
+    el.select();
+    document.execCommand('copy');
+    alert('Teks rekap berhasil disalin! Silakan tempel (paste) di grup kelas.');
+  }
+
+  function sendPersonalWA(studentId) {
+    const item = getUnpaidSummary().find(x => x.student.id === studentId);
+    if (!item) return;
+    let wa = (item.student.wa || '').replace(/\D/g, '');
+    if (wa.startsWith('0')) wa = '62' + wa.slice(1);
+    if (!wa) {
+      alert(`Nomor WA untuk ${item.student.name} belum diisi di menu Pengaturan.`);
+      return;
+    }
+    const msg = `Halo ${item.student.name}, mengingatkan rincian iuran ${state.className} yang belum dibayar:\n• ${item.unpaidItems.join('\n• ')}\n\n*Total: ${formatRp(item.total)}*\nTerima kasih 🙏`;
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function sendPersonalEmail(studentId) {
+    const item = getUnpaidSummary().find(x => x.student.id === studentId);
+    if (!item) return;
+    if (!item.student.email) {
+      alert(`Alamat email untuk ${item.student.name} belum diisi di menu Pengaturan.`);
+      return;
+    }
+    const subject = `Pengingat Iuran ${state.className} — ${item.student.name}`;
+    const body = `Halo ${item.student.name},\n\nBerikut rincian iuran ${state.className} (Wali Kelas: ${state.homeroomTeacher}) yang belum tercatat lunas:\n- ${item.unpaidItems.join('\n- ')}\n\nTotal Tagihan: ${formatRp(item.total)}\n\nTerima kasih.`;
+    window.location.href = `mailto:${item.student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  // TAB 3: PENGATURAN
+  function renderSettings() {
+    resetAllPasswordFields();
+    document.getElementById('inputApiUrl').value = getApiUrl();
+    document.getElementById('inputAppTitle').value = state.appTitle || '';
+    document.getElementById('inputClassName').value = state.className || '';
+    document.getElementById('inputHomeroomTeacher').value = state.homeroomTeacher || '';
+
+    document.getElementById('inputSettingUsername').value = state.auth.username || '';
+    document.getElementById('inputSettingPassword').value = state.auth.password || '';
+    document.getElementById('inputSettingPasswordConfirm').value = state.auth.password || '';
+
+    const payBody = document.getElementById('paymentSettingsBody');
+    payBody.innerHTML = '';
+    state.payments.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${p.name}</strong></td>
+        <td>${formatRp(p.amount)}</td>
+        <td>${p.teacher || '-'}</td>
+        <td>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <select onchange="changeMandatory('${p.id}', this.value)" style="padding:6px 10px; font-size:0.82rem; width:auto;">
+              <option value="all" ${p.mandatoryAll ? 'selected' : ''}>Wajib Semua</option>
+              <option value="selected" ${!p.mandatoryAll ? 'selected' : ''}>Pilihan (${p.participants.length} siswa)</option>
+            </select>
+            ${!p.mandatoryAll ? `<button class="btn btn-sm btn-outline" onclick="openParticipantModal('${p.id}')">👥 Pilih Siswa</button>` : ''}
+          </div>
+        </td>
+        <td><button class="btn btn-danger btn-sm" onclick="deletePayment('${p.id}')">🗑️</button></td>
+      `;
+      payBody.appendChild(tr);
+    });
+
+    const stuBody = document.getElementById('studentSettingsBody');
+    stuBody.innerHTML = '';
+    state.students.forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td><input type="text" value="${s.name}" onchange="editStudent('${s.id}', 'name', this.value)" style="padding:7px 10px;" /></td>
+        <td><input type="text" value="${s.wa}" onchange="editStudent('${s.id}', 'wa', this.value)" style="padding:7px 10px;" /></td>
+        <td><input type="email" value="${s.email}" onchange="editStudent('${s.id}', 'email', this.value)" style="padding:7px 10px;" /></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">✕</button></td>
+      `;
+      stuBody.appendChild(tr);
+    });
+  }
+
+  function saveIdentitySettings() {
+    state.appTitle = document.getElementById('inputAppTitle').value.trim() || 'KasKelas Pro';
+    state.className = document.getElementById('inputClassName').value.trim() || 'Kelas XII IPA 1';
+    state.homeroomTeacher = document.getElementById('inputHomeroomTeacher').value.trim() || '-';
+    saveState();
+    renderIdentityUI();
+    alert('Identitas judul, kelas, dan nama wali kelas berhasil disimpan!');
+  }
+
+  function addPaymentType() {
+    const name = document.getElementById('newPayName').value.trim();
+    const amount = Number(document.getElementById('newPayAmount').value) || 0;
+    const teacher = document.getElementById('newPayTeacher').value.trim();
+    const mandatoryAll = document.getElementById('newPayMandatory').value === 'all';
+
+    if (!name) { alert('Nama jenis pembayaran wajib diisi!'); return; }
+
+    const newId = 'p_' + Date.now();
+    state.payments.push({
+      id: newId,
+      name,
+      amount,
+      teacher,
+      mandatoryAll,
+      participants: mandatoryAll ? [] : state.students.map(s => s.id),
+      proofImage: ''
+    });
+
+    document.getElementById('newPayName').value = '';
+    document.getElementById('newPayAmount').value = '';
+    document.getElementById('newPayTeacher').value = '';
+    saveState();
+    renderSettings();
+    if (!mandatoryAll) openParticipantModal(newId);
+  }
+
+  function changeMandatory(payId, mode) {
+    const p = state.payments.find(x => x.id === payId);
+    if (!p) return;
+    p.mandatoryAll = (mode === 'all');
+    if (!p.mandatoryAll && p.participants.length === 0) {
+      p.participants = state.students.map(s => s.id);
+    }
+    saveState();
+    renderSettings();
+    if (!p.mandatoryAll) openParticipantModal(payId);
+  }
+
+  function deletePayment(payId) {
+    if (!confirm('Hapus jenis pembayaran ini beserta data centangnya?')) return;
+    state.payments = state.payments.filter(p => p.id !== payId);
+    saveState();
+    renderSettings();
+  }
+
+  function openParticipantModal(payId) {
+    editingPaymentId = payId;
+    const p = state.payments.find(x => x.id === payId);
+    if (!p) return;
+    document.getElementById('modalParticipantTitle').textContent = `Peserta: ${p.name}`;
+    const listEl = document.getElementById('participantList');
+    listEl.innerHTML = '';
+    state.students.forEach(s => {
+      const checked = p.participants.includes(s.id) ? 'checked' : '';
+      listEl.innerHTML += `
+        <label class="student-chip">
+          <input type="checkbox" class="part-chk" value="${s.id}" ${checked} style="accent-color:#1d4ed8;" />
+          <span>${s.name}</span>
+        </label>
+      `;
+    });
+    document.getElementById('participantModal').classList.add('open');
+  }
+
+  function toggleAllParticipants(val) {
+    document.querySelectorAll('.part-chk').forEach(c => c.checked = val);
+  }
+
+  function saveParticipants() {
+    const p = state.payments.find(x => x.id === editingPaymentId);
+    if (p) {
+      p.participants = Array.from(document.querySelectorAll('.part-chk:checked')).map(c => c.value);
+      saveState();
+    }
+    closeModal('participantModal');
+    renderSettings();
+  }
+
+  function addStudent() {
+    const name = document.getElementById('newStudentName').value.trim();
+    const wa = document.getElementById('newStudentWa').value.trim();
+    const email = document.getElementById('newStudentEmail').value.trim();
+    if (!name) { alert('Nama siswa wajib diisi!'); return; }
+
+    state.students.push({ id: 's_' + Date.now(), name, wa, email });
+    document.getElementById('newStudentName').value = '';
+    document.getElementById('newStudentWa').value = '';
+    document.getElementById('newStudentEmail').value = '';
+    saveState();
+    renderSettings();
+  }
+
+  function editStudent(id, field, val) {
+    const s = state.students.find(x => x.id === id);
+    if (s) { s[field] = val.trim(); saveState(); }
+  }
+
+  function deleteStudent(id) {
+    if (!confirm('Hapus siswa ini dari daftar kelas?')) return;
+    state.students = state.students.filter(s => s.id !== id);
+    saveState();
+    renderSettings();
+  }
+
+  function openBulkModal() {
+    document.getElementById('bulkText').value = '';
+    document.getElementById('bulkModal').classList.add('open');
+  }
+
+  function processBulkStudents() {
+    const lines = document.getElementById('bulkText').value.split('\n');
+    let added = 0;
+    lines.forEach((line, i) => {
+      const parts = line.split(',').map(x => x.trim());
+      if (parts[0]) {
+        state.students.push({
+          id: 's_' + Date.now() + '_' + i,
+          name: parts[0],
+          wa: parts[1] || '',
+          email: parts[2] || ''
+        });
+        added++;
+      }
+    });
+    saveState();
+    closeModal('bulkModal');
+    renderSettings();
+    alert(`${added} siswa berhasil ditambahkan!`);
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup-kaskelas-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const parsed = JSON.parse(evt.target.result);
+        if (parsed.students && parsed.payments) {
+          state = parsed;
+          if (!state.auth) state.auth = { username: 'admin', password: '12345', isCustom: false };
+          saveState();
+          renderIdentityUI();
+          renderChecklist();
+          alert('Data backup berhasil dipulihkan!');
+        }
+      } catch (err) {
+        alert('Format file backup tidak valid.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function resetDefaultData() {
+    if (confirm('Kembalikan ke data contoh awal? Semua perubahan saat ini akan dihapus.')) {
+      state = JSON.parse(JSON.stringify(defaultState));
+      saveState();
+      renderIdentityUI();
+      renderChecklist();
+    }
+  }
+
+  function init() {
+    checkAuth();
+    renderIdentityUI();
+    renderChecklist();
+    loadFromSheets();
+  }
+
+  init();
+</script>
+</body>
+</html>
